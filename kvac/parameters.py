@@ -1,4 +1,4 @@
-from typing import Tuple, NamedTuple
+from typing import List, Tuple, NamedTuple
 from curve25519_dalek.ristretto import RistrettoPoint
 from curve25519_dalek.scalar import Scalar
 
@@ -17,15 +17,8 @@ class SystemParams(NamedTuple):
     G_x0: RistrettoPoint
     G_x1: RistrettoPoint
 
-    G_y1: RistrettoPoint
-    G_y2: RistrettoPoint
-    G_y3: RistrettoPoint
-    G_y4: RistrettoPoint
-
-    G_m1: RistrettoPoint
-    G_m2: RistrettoPoint
-    G_m3: RistrettoPoint
-    G_m4: RistrettoPoint
+    G_ys: List[RistrettoPoint]
+    G_ms: List[RistrettoPoint]
 
     G_V: RistrettoPoint
 
@@ -33,15 +26,20 @@ class SystemParams(NamedTuple):
     G_z: RistrettoPoint  # used to prove a commitment on z
 
     @classmethod
-    def generate(cls):
+    def generate(cls, max_messages: int) -> 'SystemParams':
         sho = RistrettoSho(
             b'Signal_HPICrypto_SecMes2223_KVAC_Credential_SystemParams_Generation',
             b''
         )
 
-        # this returns a SystemParams object
-        # where all fields are randomly generated via sho.get_point()
-        return cls(*[sho.get_point() for _ in range(len(cls._fields))])
+        G_w, G_wprime, G_x0, G_x1, G_V, G_z = [sho.get_point() for _ in range(6)]
+        G_ys = [sho.get_point() for _ in range(max_messages)]
+        G_ms = [sho.get_point() for _ in range(max_messages)]
+        return cls(G_w, G_wprime, G_x0, G_x1, G_ys, G_ms, G_V, G_z)
+
+    @property
+    def max_messages(self) -> int:
+        return len(self.G_ys)
 
 
 class ServerKeyPair(NamedTuple):
@@ -57,10 +55,7 @@ class ServerKeyPair(NamedTuple):
     x0: Scalar
     x1: Scalar
 
-    y1: Scalar
-    y2: Scalar
-    y3: Scalar
-    y4: Scalar
+    ys: List[Scalar]
 
     # public
     C_w: RistrettoPoint
@@ -82,23 +77,16 @@ class ServerKeyPair(NamedTuple):
         x0 = sho.get_scalar()
         x1 = sho.get_scalar()
 
-        y1 = sho.get_scalar()
-        y2 = sho.get_scalar()
-        y3 = sho.get_scalar()
-        y4 = sho.get_scalar()
+        ys = [sho.get_scalar() for _ in range(system.max_messages)]
 
         # public
         C_w = W + (system.G_wprime * wprime)
-        I = system.G_V \
-            - (system.G_x0 * x0) \
-            - (system.G_x1 * x1) \
-            - (system.G_y1 * y1) \
-            - (system.G_y2 * y2) \
-            - (system.G_y3 * y3) \
-            - (system.G_y4 * y4)
+        I = system.G_V - (system.G_x0 * x0) - (system.G_x1 * x1)
+        for G_y, y in zip(system.G_ys, ys):
+            I -= G_y * y
         # pylint: enable=invalid-name
 
-        return cls(w, wprime, W, x0, x1, y1, y2, y3, y4, C_w, I)
+        return cls(w, wprime, W, x0, x1, ys, C_w, I)
 
     def get_public_key(self) -> Tuple[RistrettoPoint, RistrettoPoint]:
         return self.C_w, self.I

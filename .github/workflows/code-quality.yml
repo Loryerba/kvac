@@ -5,7 +5,7 @@ on:
   - pull_request
 
 env:
-  SOURCE_DIR: poksho
+  SOURCE_DIR: kvac
   TEST_DIR: tests
 
 jobs:

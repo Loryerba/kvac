@@ -62,7 +62,7 @@ class ServerKeyPair(NamedTuple):
     I: RistrettoPoint
 
     @classmethod
-    def generate(cls, system: SystemParams, sho: RistrettoSho = None):
+    def generate(cls, system: SystemParams, sho: RistrettoSho = None) -> 'ServerKeyPair':
         if sho is None:
             sho = RistrettoSho(
                 b'Signal_HPICrypto_SecMes2223_KVAC_Credential_ServerKeyPair_Generation',

@@ -10,40 +10,57 @@ from .issuer_key_pair import IssuerKeyPair
 MAX_MESSAGES = 4
 
 
-class AlgebraicMAC(NamedTuple):
+class AlgebraicMACTag(NamedTuple):
     """
-    Represents an Algebraic MAC.
+    Represents an Algebraic MAC Tag.
     """
-
     t: Scalar
     U: RistrettoPoint
     V: RistrettoPoint
 
-    @classmethod
+
+class AlgebraicMAC(NamedTuple):
+    """
+    Must be initialized with a ServerKeyPair.
+    Can be used to create or verify Algebraic MACs:
+        - to create a MAC, call `mac` with a list of messages
+          and a `RistrettoSho` instance
+        - to verify a MAC, call `verify` with a list of messages and the tag
+    """
+
+    key: IssuerKeyPair
+
     def mac(
-        cls,
-        key: IssuerKeyPair,
-        messages: List[RistrettoPoint],
-        sho: RistrettoSho,
-    ) -> 'AlgebraicMAC':
-        if len(messages) > MAX_MESSAGES:
-            raise ValueError(f'Too many messages: {len(messages)}, maximum is {MAX_MESSAGES}')
+            self,
+            messages: List[RistrettoPoint],
+            sho: RistrettoSho,
+    ) -> AlgebraicMACTag:
+        if len(messages) > self.key.max_messages:
+            raise ValueError(
+                f'Too many messages: {len(messages)}, maximum is {self.key.max_messages}'
+            )
 
         t = sho.get_scalar()
         U = sho.get_point()
 
-        V = key.W + U * (key.x0 + key.x1 * t)
-        for Mn, yn in zip(messages, key.get_y()):
+        V = self.key.W + U * (self.key.x0 + self.key.x1 * t)
+        for Mn, yn in zip(messages, self.key.ys):
             V += Mn * yn
 
-        return cls(t, U, V)
+        return AlgebraicMACTag(t, U, V)
 
-    def verify(self, key: IssuerKeyPair, messages: List[RistrettoPoint]) -> bool:
-        if len(messages) > MAX_MESSAGES:
-            raise ValueError(f'Too many messages: {len(messages)}, maximum is {MAX_MESSAGES}')
+    def verify(
+            self,
+            messages: List[RistrettoPoint],
+            tag: AlgebraicMACTag,
+    ) -> bool:
+        if len(messages) > self.key.max_messages:
+            raise ValueError(
+                f'Too many messages: {len(messages)}, maximum is {self.key.max_messages}'
+            )
 
-        V = key.W + self.U * (key.x0 + key.x1 * self.t)
-        for Mn, yn in zip(messages, key.get_y()):
+        V = self.key.W + tag.U * (self.key.x0 + self.key.x1 * tag.t)
+        for Mn, yn in zip(messages, self.key.ys):
             V += Mn * yn
 
-        return self.V == V
+        return tag.V == V

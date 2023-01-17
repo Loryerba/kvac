@@ -11,8 +11,7 @@ class RistrettoSho:
     """
 
     def __init__(self, customization_label: bytes, data: bytes):
-        # TODO: implement and use a HMAC-SHA-256 SHO
-        self._sho = SHO(customization_label)
+        self._sho = SHO(customization_label, use_hmac=True)
         self._sho.absorb_and_ratchet(data)
 
     def squeeze(self, out_length: int) -> bytes:

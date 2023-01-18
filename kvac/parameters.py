@@ -1,4 +1,4 @@
-from typing import List, Tuple, NamedTuple
+from typing import List, NamedTuple, Optional, Tuple
 from curve25519_dalek.ristretto import RistrettoPoint
 from curve25519_dalek.scalar import Scalar
 
@@ -62,7 +62,7 @@ class ServerKeyPair(NamedTuple):
     I: RistrettoPoint
 
     @classmethod
-    def generate(cls, system: SystemParams, sho: RistrettoSho = None) -> 'ServerKeyPair':
+    def generate(cls, system: SystemParams, sho: Optional[RistrettoSho] = None) -> 'ServerKeyPair':
         if sho is None:
             sho = RistrettoSho(
                 b'Signal_HPICrypto_SecMes2223_KVAC_Credential_ServerKeyPair_Generation',

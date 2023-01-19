@@ -61,24 +61,4 @@ def get_signal_system_hardcoded() -> kvac.SystemParams:
 
 def test_generate_signal_hardcoded_test_system():
     # assumption: kvac.RistrettoSho uses HMAC-SHA-256 SHO
-    sho = kvac.RistrettoSho(
-        b"Signal_ZKGroup_20200424_Constant_Credentials_SystemParams_Generate",
-        b""
-    )
-    G_w = sho.get_point()
-    G_wprime = sho.get_point()
-
-    G_x0 = sho.get_point()
-    G_x1 = sho.get_point()
-
-    G_ys = [sho.get_point() for _ in range(4)]
-    G_ms = [sho.get_point() for _ in range(4)]
-
-    G_V = sho.get_point()
-    G_z = sho.get_point()
-
-    G_ys.extend([sho.get_point() for _ in range(2)])
-    G_ms.append(sho.get_point())
-
-    assert kvac.SystemParams(G_w, G_wprime, G_x0, G_x1, G_ys, G_ms, G_V, G_z) == \
-        get_signal_system_hardcoded()
+    assert kvac.SystemParams.generate_signal_parameters() == get_signal_system_hardcoded()

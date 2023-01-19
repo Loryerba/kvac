@@ -44,7 +44,10 @@ jobs:
   pytest:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - name: Check out repository and submodules
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
     - name: Set up python
       uses: actions/setup-python@v3
       with:

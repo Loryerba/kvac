@@ -4,6 +4,9 @@ import kvac
 
 
 class TestMac:
+    """
+    MAC tests
+    """
     @pytest.fixture
     def macer(self):
         sho = kvac.RistrettoSho(b'TestMac::macer', b'')

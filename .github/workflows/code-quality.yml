@@ -24,7 +24,7 @@ jobs:
         pip install -r requirements.txt
     - name: pylint
       run: |
-        pylint --rcfile .pylintrc $SOURCE_DIR
+        pylint $SOURCE_DIR $TEST_DIR
   mypy:
     runs-on: ubuntu-latest
     steps:
@@ -40,7 +40,7 @@ jobs:
         pip install -r requirements.txt
     - name: mypy
       run: |
-        mypy $SOURCE_DIR
+        mypy $SOURCE_DIR $TEST_DIR
   pytest:
     runs-on: ubuntu-latest
     steps:

@@ -27,13 +27,13 @@ class SystemParams(NamedTuple):
     @classmethod
     def generate(
             cls,
-            max_messages: int,
+            max_attributes: int,
             sho: RistrettoSho
     ) -> 'SystemParams':
 
         G_w, G_wprime, G_x0, G_x1, G_V, G_z = [sho.get_point() for _ in range(6)]
-        G_ys = [sho.get_point() for _ in range(max_messages)]
-        G_ms = [sho.get_point() for _ in range(max_messages)]
+        G_ys = [sho.get_point() for _ in range(max_attributes)]
+        G_ms = [sho.get_point() for _ in range(max_attributes)]
 
         return cls(G_w, G_wprime, G_x0, G_x1, G_ys, G_ms, G_V, G_z)
 
@@ -61,5 +61,5 @@ class SystemParams(NamedTuple):
         return cls(G_w, G_wprime, G_x0, G_x1, G_ys, G_ms, G_V, G_z)
 
     @property
-    def max_messages(self) -> int:
+    def max_attributes(self) -> int:
         return len(self.G_ys)

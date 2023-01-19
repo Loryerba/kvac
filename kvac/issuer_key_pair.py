@@ -18,6 +18,7 @@ class IssuerKeyPair(NamedTuple):
     """
     Represents a Server's key pair, including private and public values.
     """
+    system: SystemParams
 
     # private
     w: Scalar
@@ -47,7 +48,7 @@ class IssuerKeyPair(NamedTuple):
         x0 = sho.get_scalar()
         x1 = sho.get_scalar()
 
-        ys = [sho.get_scalar() for _ in range(system.max_messages)]
+        ys = [sho.get_scalar() for _ in range(system.max_attributes)]
 
         # public
         C_w = W + (system.G_wprime * wprime)
@@ -55,7 +56,11 @@ class IssuerKeyPair(NamedTuple):
         for G_y, y in zip(system.G_ys, ys):
             I -= G_y * y
 
-        return cls(w, wprime, W, x0, x1, ys, C_w, I)
+        return cls(system, w, wprime, W, x0, x1, ys, C_w, I)
 
     def get_public_key(self) -> IssuerPublicKey:
         return IssuerPublicKey(self.C_w, self.I)
+
+    @property
+    def max_attributes(self) -> int:
+        return self.system.max_attributes

@@ -7,6 +7,9 @@ from .system_params import SystemParams
 
 
 class IssuerPublicKey(NamedTuple):
+    """
+    Represents the public key of an issuer.
+    """
     C_w: RistrettoPoint
     I: RistrettoPoint
 

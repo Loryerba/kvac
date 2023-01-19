@@ -1,6 +1,7 @@
-from kvac import RistrettoSho
 from curve25519_dalek.ristretto import CompressedRistretto
 from curve25519_dalek.scalar import Scalar
+
+from kvac import RistrettoSho
 
 
 def test_ristretto_sho_get_point():

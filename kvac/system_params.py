@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, NamedTuple
-from curve25519_dalek.ristretto import RistrettoPoint
+from poksho.poksho.group.ristretto import RistrettoPoint
 
 from kvac.ristretto_sho import RistrettoSho
 

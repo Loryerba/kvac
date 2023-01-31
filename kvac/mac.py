@@ -7,8 +7,8 @@ https://signal.org/blog/pdfs/signal_private_group_system.pdf.
 from typing import List, NamedTuple, Tuple
 import secrets
 
-from curve25519_dalek.ristretto import RistrettoPoint
-from curve25519_dalek.scalar import Scalar
+from poksho.poksho.group.ristretto import RistrettoPoint
+from poksho.poksho.group.ristretto import RistrettoScalar as Scalar
 
 from kvac.ristretto_sho import RistrettoSho
 from kvac.issuer_key import IssuerKeyPair

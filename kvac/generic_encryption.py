@@ -114,7 +114,7 @@ class KeyPair(NamedTuple):
             raise ZkGroupVerificationFailure()
 
         # M2' = E_2 / ((E_1) ^ a_2)
-        decrypted_M2 = (ciphertext.E_2 - (ciphertext.E_1 * self.a2))
+        decrypted_M2 = ciphertext.E_2 - (ciphertext.E_1 * self.a2)
         # m' = DecodeFromG(M2')
         decrypted_m = RistrettoPoint.lizard_decode_sha256(decrypted_M2)
         sho = RistrettoSho(self.hashing_label, decrypted_m)

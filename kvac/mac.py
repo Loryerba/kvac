@@ -8,7 +8,7 @@ from typing import List, NamedTuple, Tuple
 import secrets
 
 from poksho.poksho.group.ristretto import RistrettoPoint
-from poksho.poksho.group.ristretto import RistrettoScalar as Scalar
+from poksho.poksho.group.ristretto import RistrettoScalar
 
 from kvac.ristretto_sho import RistrettoSho
 from kvac.issuer_key import IssuerKeyPair

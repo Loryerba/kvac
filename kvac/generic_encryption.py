@@ -20,7 +20,7 @@ class SystemParams(NamedTuple):
     @classmethod
     def generate(
             cls,
-            system_label: bytes 
+            system_label: bytes
     ) -> SystemParams:
         """
         Note that in order to generate new system parameters you need to provide a customization
@@ -39,8 +39,8 @@ class SystemParams(NamedTuple):
 
     @classmethod
     def from_bytes(cls, system_params_bytes: bytes) -> SystemParams:
-        if not len(system_params_bytes) == 64:
-            raise DeserializationFailure
+        if len(system_params_bytes) != 64:
+            raise DeserializationFailure('Provided input was not 64 bytes.')
         G_1 = CompressedRistretto(bytes(system_params_bytes[0:32])).decompress()
         G_2 = CompressedRistretto(bytes(system_params_bytes[32:64])).decompress()
         return cls(G_1, G_2)
@@ -95,6 +95,8 @@ class KeyPair(NamedTuple):
         :param m: Plaintext m
         :return: Ciphertext
         """
+        if len(m) != 16:
+            raise ValueError('Only messages of 16 byte are supported.')
         sho = RistrettoSho(b'kvac.generic_encryption.KeyPair.hashing', m)
         # M1 = HashToG(m)
         M1 = sho.get_point()
@@ -142,6 +144,8 @@ class KeyPair(NamedTuple):
 
     @classmethod
     def from_bytes(cls, key_pair_bytes: bytes) -> KeyPair:
+        if len(key_pair_bytes) != 96:
+            raise DeserializationFailure('Provided input was not 96 bytes.')
         a1 = Scalar.from_bytes_mod_order(bytes(key_pair_bytes[0:32]))
         a2 = Scalar.from_bytes_mod_order(bytes(key_pair_bytes[32:64]))
         A = CompressedRistretto(bytes(key_pair_bytes[64:96])).decompress()
@@ -161,6 +165,8 @@ class Ciphertext(NamedTuple):
 
     @classmethod
     def from_bytes(cls, ciphertext_bytes: bytes) -> Ciphertext:
+        if len(ciphertext_bytes) != 64:
+            raise DeserializationFailure('Provided input was not 64 bytes.')
         E_1 = CompressedRistretto(bytes(ciphertext_bytes[0:32])).decompress()
         E_2 = CompressedRistretto(bytes(ciphertext_bytes[32:64])).decompress()
         return cls(E_1, E_2)

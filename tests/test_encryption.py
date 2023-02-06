@@ -3,36 +3,33 @@ import pytest
 import kvac
 
 # Hardcoded constants from libsignal
-TEST_ARRAY_16 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+TEST_ARRAY_16 = list(range(16))
 
-TEST_ARRAY_32 = [
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-    26, 27, 28, 29, 30, 31,
-]
+TEST_ARRAY_32 = list(range(32))
 
 # Hardcoded constants from previously (hopefully) correct implementation
 SYSTEM_HARDCODED = [
-    0x34, 0x6f, 0x08, 0xef, 0xd1, 0x68, 0x74, 0x67, 0x18, 0xd9, 0x16, 0xba, 0x40, 0x61, 0xf6,
-    0x11, 0x71, 0x0d, 0x04, 0x4c, 0x31, 0x7b, 0xe5, 0x0a, 0x48, 0x8b, 0x14, 0x4c, 0x38, 0xcc,
-    0x72, 0x4b, 0xc0, 0xa4, 0x49, 0xbb, 0x62, 0xe7, 0x78, 0x98, 0x49, 0xae, 0x32, 0x9a, 0xa0,
-    0xcc, 0x44, 0xad, 0x34, 0x70, 0xdc, 0x78, 0xf6, 0x52, 0x85, 0x66, 0x98, 0x69, 0xee, 0x0f,
-    0x80, 0xb4, 0x80, 0x77,
+    0xf4, 0x21, 0xfa, 0x85, 0x15, 0x2c, 0xf9, 0xb6, 0x42, 0x25, 0xea, 0x16, 0xcb, 0x23, 0xca,
+    0x84, 0x01, 0xcb, 0x70, 0x5d, 0x07, 0x5a, 0xc9, 0x00, 0x6c, 0x85, 0xca, 0xdb, 0xd9, 0x60,
+    0xc2, 0x1a, 0x34, 0x2c, 0xaf, 0x6e, 0x20, 0xfd, 0x51, 0xbc, 0xd4, 0x5b, 0x3c, 0x35, 0xbd,
+    0x39, 0x53, 0xfa, 0x33, 0xd0, 0x90, 0x18, 0xeb, 0xa6, 0x1d, 0x4d, 0x95, 0xd7, 0xd3, 0x30,
+    0x0d, 0x42, 0xfe, 0x47,
 ]
 
 SYSTEM_HARDCODED_63 = [
-    0x34, 0x6f, 0x08, 0xef, 0xd1, 0x68, 0x74, 0x67, 0x18, 0xd9, 0x16, 0xba, 0x40, 0x61, 0xf6,
-    0x11, 0x71, 0x0d, 0x04, 0x4c, 0x31, 0x7b, 0xe5, 0x0a, 0x48, 0x8b, 0x14, 0x4c, 0x38, 0xcc,
-    0x72, 0x4b, 0xc0, 0xa4, 0x49, 0xbb, 0x62, 0xe7, 0x78, 0x98, 0x49, 0xae, 0x32, 0x9a, 0xa0,
-    0xcc, 0x44, 0xad, 0x34, 0x70, 0xdc, 0x78, 0xf6, 0x52, 0x85, 0x66, 0x98, 0x69, 0xee, 0x0f,
-    0x80, 0xb4, 0x80,
+    0xf4, 0x21, 0xfa, 0x85, 0x15, 0x2c, 0xf9, 0xb6, 0x42, 0x25, 0xea, 0x16, 0xcb, 0x23, 0xca,
+    0x84, 0x01, 0xcb, 0x70, 0x5d, 0x07, 0x5a, 0xc9, 0x00, 0x6c, 0x85, 0xca, 0xdb, 0xd9, 0x60,
+    0xc2, 0x1a, 0x34, 0x2c, 0xaf, 0x6e, 0x20, 0xfd, 0x51, 0xbc, 0xd4, 0x5b, 0x3c, 0x35, 0xbd,
+    0x39, 0x53, 0xfa, 0x33, 0xd0, 0x90, 0x18, 0xeb, 0xa6, 0x1d, 0x4d, 0x95, 0xd7, 0xd3, 0x30,
+    0x0d, 0x42, 0xfe,
 ]
 
 SYSTEM_HARDCODED_65 = [
-    0x34, 0x6f, 0x08, 0xef, 0xd1, 0x68, 0x74, 0x67, 0x18, 0xd9, 0x16, 0xba, 0x40, 0x61, 0xf6,
-    0x11, 0x71, 0x0d, 0x04, 0x4c, 0x31, 0x7b, 0xe5, 0x0a, 0x48, 0x8b, 0x14, 0x4c, 0x38, 0xcc,
-    0x72, 0x4b, 0xc0, 0xa4, 0x49, 0xbb, 0x62, 0xe7, 0x78, 0x98, 0x49, 0xae, 0x32, 0x9a, 0xa0,
-    0xcc, 0x44, 0xad, 0x34, 0x70, 0xdc, 0x78, 0xf6, 0x52, 0x85, 0x66, 0x98, 0x69, 0xee, 0x0f,
-    0x80, 0xb4, 0x80, 0x77, 0x77,
+    0xf4, 0x21, 0xfa, 0x85, 0x15, 0x2c, 0xf9, 0xb6, 0x42, 0x25, 0xea, 0x16, 0xcb, 0x23, 0xca,
+    0x84, 0x01, 0xcb, 0x70, 0x5d, 0x07, 0x5a, 0xc9, 0x00, 0x6c, 0x85, 0xca, 0xdb, 0xd9, 0x60,
+    0xc2, 0x1a, 0x34, 0x2c, 0xaf, 0x6e, 0x20, 0xfd, 0x51, 0xbc, 0xd4, 0x5b, 0x3c, 0x35, 0xbd,
+    0x39, 0x53, 0xfa, 0x33, 0xd0, 0x90, 0x18, 0xeb, 0xa6, 0x1d, 0x4d, 0x95, 0xd7, 0xd3, 0x30,
+    0x0d, 0x42, 0xfe, 0x47, 0x00,
 ]
 
 CIPHERTEXT_HARDCODED = [
@@ -44,27 +41,30 @@ CIPHERTEXT_HARDCODED = [
 ]
 
 
-def test_encryption():
-    # Testing system parameters
+def test_encryption_params():
+    # Testing encryption parameters
     # ==============================================================================================
-    system_label = b'Signal_ZKGroup_20200424_Constant_UidEncryption_SystemParams_Generate'
+    system_label = b'EncryptionParams_Generate'
     # Generate system and check if it's the same as the one previously generated with this
     # system label
-    system = kvac.EncryptionSystemParams.generate(system_label)
-    assert system == kvac.EncryptionSystemParams.from_bytes(bytes(SYSTEM_HARDCODED))
+    system = kvac.EncryptionParams.generate(system_label)
+    assert system == kvac.EncryptionParams.from_bytes(bytes(SYSTEM_HARDCODED))
 
     # Check if tyring to decode 63 bytes raises a DeserializationFailure
     with pytest.raises(kvac.DeserializationFailure):
-        kvac.EncryptionSystemParams.from_bytes(bytes(SYSTEM_HARDCODED_63))
+        kvac.EncryptionParams.from_bytes(bytes(SYSTEM_HARDCODED_63))
     # Check if tyring to decode 65 bytes raises a DeserializationFailure
     with pytest.raises(kvac.DeserializationFailure):
-        kvac.EncryptionSystemParams.from_bytes(bytes(SYSTEM_HARDCODED_65))
-    # ==============================================================================================
+        kvac.EncryptionParams.from_bytes(bytes(SYSTEM_HARDCODED_65))
 
+
+def test_key_pair():
     # Testing key pairs
     # ==============================================================================================
-    # Derive a key pair for that system from a master key
+    system_label = b'EncryptionParams_Generate'
+    system = kvac.EncryptionParams.generate(system_label)
     master_key = bytes(TEST_ARRAY_32)
+    # Derive a key pair for that system from a master key
     key_pair = kvac.KeyPair.derive_from(system, master_key)
     # Convert key pair to bytes and check if they are the same after conversion
     key_pair_bytes = bytes(key_pair)
@@ -72,14 +72,19 @@ def test_encryption():
     assert key_pair == key_pair2
     # Check if tyring to decode 95 bytes raises a DeserializationFailure
     with pytest.raises(kvac.DeserializationFailure):
-        kvac.EncryptionSystemParams.from_bytes(key_pair_bytes[0:95])
+        kvac.EncryptionParams.from_bytes(key_pair_bytes[0:95])
     # Check if tyring to decode 96 bytes raises a DeserializationFailure
     with pytest.raises(kvac.DeserializationFailure):
-        kvac.EncryptionSystemParams.from_bytes(key_pair_bytes+bytes(1))
-    # ==============================================================================================
+        kvac.EncryptionParams.from_bytes(key_pair_bytes + bytes(1))
 
+
+def test_encryption():
     # Testing specific encryption/decryption rigorously
     # ==============================================================================================
+    system_label = b'EncryptionParams_Generate'
+    system = kvac.EncryptionParams.generate(system_label)
+    master_key = bytes(TEST_ARRAY_32)
+    key_pair = kvac.KeyPair.derive_from(system, master_key)
     # Generate m and encrypt it
     m = bytes(TEST_ARRAY_16)
     ciphertext = key_pair.encrypt(m)
@@ -90,29 +95,39 @@ def test_encryption():
     assert ciphertext == ciphertext2
     # Check if tyring to decode 63 bytes raises a DeserializationFailure
     with pytest.raises(kvac.DeserializationFailure):
-        kvac.EncryptionSystemParams.from_bytes(ciphertext_bytes[0:63])
+        kvac.EncryptionParams.from_bytes(ciphertext_bytes[0:63])
     # Check if tyring to decode 63 bytes raises a DeserializationFailure
     with pytest.raises(kvac.DeserializationFailure):
-        kvac.EncryptionSystemParams.from_bytes(ciphertext_bytes+bytes(1))
+        kvac.EncryptionParams.from_bytes(ciphertext_bytes+bytes(1))
     # Check if the ciphertext bytes are the same as a previous encryption of this ciphertext
     assert ciphertext_bytes == bytes(CIPHERTEXT_HARDCODED)
     # Decrypt the ciphertext and check if it is the same as the original uid
     plaintext = key_pair.decrypt(ciphertext2)
     assert plaintext == m
-    # ==============================================================================================
 
+
+def test_repeated_encryption():
     # Test repeated encryption and decryption
     # ==============================================================================================
+    system_label = b'Repeated_Encryption_EncryptionParams'
+    system = kvac.EncryptionParams.generate(system_label)
+    master_key = bytes(TEST_ARRAY_32)
+    key_pair = kvac.KeyPair.derive_from(system, master_key)
     sho = kvac.RistrettoSho(b'Test_Repeated_Encryption', b'seed')
     for _ in range(100):
         m = bytes(sho.squeeze(16))
         assert m == key_pair.decrypt(key_pair.encrypt(m))
-    # ==============================================================================================
 
+
+def test_message_sizes():
     # Test encryption and decryption of increasingly longer messages if only messages with 16 bytes
     # can be encrypted
     # ==============================================================================================
-    sho = kvac.RistrettoSho(b'Test_Repeated_Encryption', b'seed')
+    system_label = b'Message_Size_EncryptionParams'
+    system = kvac.EncryptionParams.generate(system_label)
+    master_key = bytes(TEST_ARRAY_32)
+    key_pair = kvac.KeyPair.derive_from(system, master_key)
+    sho = kvac.RistrettoSho(b'Message_Size_Encryption', b'seed')
     for i in range(100):
         m = bytes(sho.squeeze(i))
 
@@ -121,16 +136,16 @@ def test_encryption():
                 key_pair.decrypt(key_pair.encrypt(m))
         else:
             assert m == key_pair.decrypt(key_pair.encrypt(m))
-    # ==============================================================================================
 
+
+def test_random_systems():
     # Test repeated encryption and decryption for different systems
     # ==============================================================================================
     sho = kvac.RistrettoSho(b'Test_Repeated_Encryption_Various_Systems', b'seed')
     for _ in range(100):
         system_label = bytes(sho.squeeze(32))
-        system = kvac.EncryptionSystemParams.generate(system_label)
+        system = kvac.EncryptionParams.generate(system_label)
         master_key = bytes(sho.squeeze(32))
         key_pair = kvac.KeyPair.derive_from(system, master_key)
         m = bytes(sho.squeeze(16))
         assert m == key_pair.decrypt(key_pair.encrypt(m))
-    # ==============================================================================================

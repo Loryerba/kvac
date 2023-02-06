@@ -6,5 +6,5 @@ class ZkGroupVerificationFailure(Exception):
 
 class DeserializationFailure(Exception):
     """
-        Exception that is thrown if deserialization fails
+    Exception that is thrown if deserialization fails
     """

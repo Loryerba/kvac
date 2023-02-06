@@ -9,7 +9,7 @@ from .ristretto_sho import RistrettoSho
 from .exceptions import ZkGroupVerificationFailure, DeserializationFailure
 
 
-class SystemParams(NamedTuple):
+class EncryptionParams(NamedTuple):
     """
     This class represents the system parameters for the encryption scheme.
     It includes RistrettoPoints G_1 and G_2.
@@ -21,7 +21,7 @@ class SystemParams(NamedTuple):
     def generate(
             cls,
             system_label: bytes
-    ) -> SystemParams:
+    ) -> EncryptionParams:
         """
         Note that in order to generate new system parameters you need to provide a customization
         label that will be used for the RistrettoSho object to derive G_1 and G_2.
@@ -38,7 +38,7 @@ class SystemParams(NamedTuple):
         return bytes(self.G_1.compress()) + bytes(self.G_2.compress())
 
     @classmethod
-    def from_bytes(cls, system_params_bytes: bytes) -> SystemParams:
+    def from_bytes(cls, system_params_bytes: bytes) -> EncryptionParams:
         if len(system_params_bytes) != 64:
             raise DeserializationFailure('Provided input was not 64 bytes.')
         G_1 = CompressedRistretto(bytes(system_params_bytes[0:32])).decompress()
@@ -46,7 +46,7 @@ class SystemParams(NamedTuple):
         return cls(G_1, G_2)
 
     def __eq__(self, other) -> bool:
-        if not isinstance(other, SystemParams):
+        if not isinstance(other, EncryptionParams):
             return False
         return self.G_1 == other.G_1 and self.G_2 == other.G_2
 
@@ -58,8 +58,8 @@ class KeyPair(NamedTuple):
     is used to instantiate RistrettoSho objects for hashing into G.
     For a high-level intuition see "The Signal Private Group System and Anonymous Credentials
     Supporting Verifiable Encryption" (Chase et al., 2020).
-    This implementation is similar to uid encryption of Signals implementation. However, this is a
-    generic approach, thus it's not possible to encrypt Signal profile keys with it.
+    This implementation is similar to uid encryption of Signals implementation. It can only encrypt
+    messages of size 64 bits.
     Reference:
     https://github.com/signalapp/libsignal/blob/main/rust/zkgroup/src/crypto/uid_encryption.rs
     """
@@ -71,7 +71,7 @@ class KeyPair(NamedTuple):
     @classmethod
     def derive_from(
             cls,
-            system: SystemParams,
+            system: EncryptionParams,
             master_key: bytes,
     ) -> KeyPair:
         """

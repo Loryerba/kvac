@@ -1,7 +1,7 @@
 from curve25519_dalek.ristretto import RistrettoPoint
 from curve25519_dalek.scalar import Scalar
 
-from poksho.poksho import SHO
+from poksho import SHO
 
 
 class RistrettoSho:
@@ -12,6 +12,12 @@ class RistrettoSho:
 
     def __init__(self, customization_label: bytes, data: bytes):
         self._sho = SHO(customization_label, use_hmac=True)
+        self._sho.absorb_and_ratchet(data)
+
+    def absorb(self, data: bytes):
+        self._sho.absorb(data)
+
+    def absorb_and_ratchet(self, data: bytes):
         self._sho.absorb_and_ratchet(data)
 
     def squeeze(self, out_length: int) -> bytes:

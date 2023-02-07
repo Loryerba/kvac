@@ -5,7 +5,7 @@ from kvac.kvac import KVAC, Attribute
 
 from kvac.ristretto_sho import RistrettoSho
 from kvac.system_params import SystemParams
-from kvac.issuer_key_pair import IssuerKeyPair
+from kvac.issuer_key import IssuerKeyPair
 
 
 # pytest fixtures constantly redefine outer names, so ignore the warning.

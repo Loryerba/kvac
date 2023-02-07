@@ -8,7 +8,7 @@ from poksho.statement import Statement, Proof, Equation
 from poksho.group.ristretto import Group as RistrettoGroup
 
 from kvac.mac import BlindMACTag, MAC
-from kvac.issuer_key_pair import IssuerPublicKey, IssuerKeyPair
+from kvac.issuer_key import IssuerPublicKey, IssuerKeyPair
 
 if TYPE_CHECKING:
     from kvac.kvac import IssuanceRequest

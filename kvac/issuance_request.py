@@ -7,7 +7,7 @@ from poksho.group.ristretto import RistrettoPoint, RistrettoScalar
 from poksho.statement import Statement, Proof, Equation
 from poksho.group.ristretto import Group as RistrettoGroup
 
-from kvac.issuer_key_pair import IssuerPublicKey
+from kvac.issuer_key import IssuerPublicKey
 from kvac.elgamal import (
     ElGamalKeyPair,
     ElGamalPublicKey,
@@ -46,7 +46,7 @@ class IssuanceRequest(NamedTuple):
         ]
 
         commitment_with_secret_nonce = BlindAttributeCommitmentWithSecretNonce.new(
-            issuer_key.system, blind_attributes
+            issuer_key, blind_attributes
         )
 
         statement = IssuanceRequestStatement.new(len(blind_attributes))

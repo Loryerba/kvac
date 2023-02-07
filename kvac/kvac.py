@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List, Tuple, NamedTuple, Any, Optional
 
 from kvac.mac import MACTag
-from kvac.issuer_key_pair import IssuerPublicKey, IssuerKeyPair
+from kvac.issuer_key import IssuerPublicKey, IssuerKeyPair
 from kvac.elgamal import ElGamalKeyPair
 from kvac.commitment import BlindAttributeCommitment
 from kvac.errors import VerificationError
@@ -183,13 +183,18 @@ class KVAC:
         commitment: Optional[BlindAttributeCommitment] = None,
     ) -> IssuanceResponse:
         """Issues a new KVAC and generates the issuance response.
-        If a commitment is given, also check that the blinded values committed
-        to in the request matches the given commitment.
+        Also checks that the blinded values committed to in the request matches
+        the given commitment.
 
         Called by the issuer.
         """
 
-        if commitment is not None:
+        if len(request.blinded_attributes) > 0:
+            if commitment is None:
+                raise ValueError(
+                    "commitment is required if blind attributes are given."
+                )
+
             if request.commitment != commitment:
                 raise VerificationError(
                     "Commitment in request does not match given commitment."

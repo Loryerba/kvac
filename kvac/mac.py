@@ -11,7 +11,7 @@ from curve25519_dalek.ristretto import RistrettoPoint
 from curve25519_dalek.scalar import Scalar
 
 from kvac.ristretto_sho import RistrettoSho
-from kvac.issuer_key_pair import IssuerKeyPair
+from kvac.issuer_key import IssuerKeyPair
 
 from kvac.elgamal import ElGamalCiphertext, ElGamalKeyPair, ElGamalPublicKey
 

@@ -67,7 +67,7 @@ class TestIssuanceResponse:
 
     def test_valid(self, issuer_key, attributes):
         commitment = BlindAttributeCommitment.new(
-            issuer_key.public.system, [attributes['a3'], attributes['a4']]
+            issuer_key.public, [attributes['a3'], attributes['a4']]
         )
         request, _ = ExampleCredential.request(
             issuer_key=issuer_key.public, **attributes
@@ -81,7 +81,7 @@ class TestIssuanceResponse:
 
     def test_invalid(self, issuer_key, attributes, sho):
         commitment = BlindAttributeCommitment.new(
-            issuer_key.public.system, [attributes['a3'], attributes['a4']]
+            issuer_key.public, [attributes['a3'], attributes['a4']]
         )
         request, _ = ExampleCredential.request(
             issuer_key=issuer_key.public, **attributes
@@ -97,7 +97,7 @@ class TestIssuanceResponse:
     @pytest.mark.parametrize('commitment_attributes', [['a1'], ['a1', 'a2'], ['a1', 'a2', 'a3']])
     def test_commitment_missmatch(self, issuer_key, attributes, commitment_attributes):
         commitment = BlindAttributeCommitment.new(
-            issuer_key.public.system, [attributes[a] for a in commitment_attributes]
+            issuer_key.public, [attributes[a] for a in commitment_attributes]
         )
         request, _ = ExampleCredential.request(
             issuer_key=issuer_key.public, **attributes

@@ -43,7 +43,7 @@ class IssuerKeyPair(NamedTuple):
     ) -> IssuerKeyPair:
         """Generates a new issuer key pair."""
         sho = RistrettoSho(
-            b'kvac.issuer_key_pair.IssuerKeyPair.generate',
+            b'kvac.issuer_key.IssuerKeyPair.generate',
             secrets.token_bytes(256))
 
         # private values

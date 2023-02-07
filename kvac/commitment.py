@@ -18,7 +18,7 @@ from curve25519_dalek.ristretto import RistrettoPoint
 from curve25519_dalek.scalar import Scalar as RistrettoScalar
 
 from kvac.ristretto_sho import RistrettoSho
-from kvac.system_params import SystemParams
+from kvac.issuer_key import IssuerPublicKey
 
 
 class BlindAttributeCommitment(NamedTuple):
@@ -31,10 +31,10 @@ class BlindAttributeCommitment(NamedTuple):
     @classmethod
     def new(
         cls,
-        params: SystemParams,
+        issuer_key: IssuerPublicKey,
         attributes: List[RistrettoPoint],
     ) -> BlindAttributeCommitment:
-        return BlindAttributeCommitmentWithSecretNonce.new(params, attributes).C
+        return BlindAttributeCommitmentWithSecretNonce.new(issuer_key, attributes).C
 
 
 class BlindAttributeCommitmentWithSecretNonce(NamedTuple):
@@ -54,14 +54,14 @@ class BlindAttributeCommitmentWithSecretNonce(NamedTuple):
     @classmethod
     def new(
         cls,
-        params: SystemParams,
+        issuer_key: IssuerPublicKey,
         attributes: List[RistrettoPoint],
     ) -> BlindAttributeCommitmentWithSecretNonce:
         """Create a new commitment to the given attributes."""
 
-        if len(attributes) > params.max_attributes:
+        if len(attributes) > issuer_key.max_attributes:
             raise ValueError(
-                f"Too many attributes: {len(attributes)}, max: {len(params.G_js)}"
+                f"Too many attributes: {len(attributes)}, max: {issuer_key.max_attributes}"
             )
 
         j_r = cls.derive_jr(attributes)
@@ -70,9 +70,9 @@ class BlindAttributeCommitmentWithSecretNonce(NamedTuple):
             C=BlindAttributeCommitment(
                 Js=[
                     G_j * j_r + attribute
-                    for G_j, attribute in zip(params.G_js, attributes)
+                    for G_j, attribute in zip(issuer_key.system.G_js, attributes)
                 ],
-                Jr=params.G_r * j_r,
+                Jr=issuer_key.system.G_r * j_r,
             ),
             j_r=j_r,
         )

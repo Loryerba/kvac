@@ -11,7 +11,7 @@ from kvac.commitment import BlindAttributeCommitment
 
 def test_kvac_complete_example(issuer_key, attributes):
     commitment = BlindAttributeCommitment.new(
-        issuer_key.public.system, [attributes["a3"], attributes["a4"]]
+        issuer_key.public, [attributes["a3"], attributes["a4"]]
     )
 
     # user
@@ -34,10 +34,15 @@ def test_kvac_complete_example(issuer_key, attributes):
 
 
 def test_kvac_attributes(issuer_key, attributes):
+    commitment = BlindAttributeCommitment.new(
+        issuer_key.public, [attributes["a3"], attributes["a4"]]
+    )
     request, user_key = ExampleCredential.request(
         issuer_key=issuer_key.public, **attributes
     )
-    response = ExampleCredential.issue(issuer_key=issuer_key, request=request)
+    response = ExampleCredential.issue(
+        issuer_key=issuer_key, request=request, commitment=commitment
+    )
     cred = ExampleCredential(
         issuer_key=issuer_key.public,
         user_key=user_key,

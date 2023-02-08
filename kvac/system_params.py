@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, NamedTuple
-from poksho.poksho.group.ristretto import RistrettoPoint
+from poksho.group.ristretto import RistrettoPoint
 
 from kvac.ristretto_sho import RistrettoSho
 

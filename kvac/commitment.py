@@ -14,8 +14,7 @@ server can verify that a user knows the committed to values for a stored commitm
 from __future__ import annotations
 from typing import List, NamedTuple
 
-from curve25519_dalek.ristretto import RistrettoPoint
-from curve25519_dalek.scalar import Scalar as RistrettoScalar
+from poksho.group.ristretto import RistrettoPoint, RistrettoScalar
 
 from kvac.ristretto_sho import RistrettoSho
 from kvac.issuer_key import IssuerPublicKey
@@ -48,7 +47,7 @@ class BlindAttributeCommitmentWithSecretNonce(NamedTuple):
         """Deterministically derives a scalar from a list of attributes."""
         sho = RistrettoSho(b"kvac.commitment.derive_jr", b"")
         for attribute in attributes:
-            sho.absorb_and_ratchet(bytes(attribute.compress()))
+            sho.absorb_and_ratchet(bytes(attribute.value.compress()))
         return sho.get_scalar()
 
     @classmethod
@@ -69,10 +68,10 @@ class BlindAttributeCommitmentWithSecretNonce(NamedTuple):
         return cls(
             C=BlindAttributeCommitment(
                 Js=[
-                    G_j * j_r + attribute
+                    G_j ** j_r * attribute
                     for G_j, attribute in zip(issuer_key.system.G_js, attributes)
                 ],
-                Jr=issuer_key.system.G_r * j_r,
+                Jr=issuer_key.system.G_r ** j_r,
             ),
             j_r=j_r,
         )

@@ -3,7 +3,7 @@ from typing import List, NamedTuple, TYPE_CHECKING
 
 from poksho.equation import Element as SymbolicElement, Exponent as SymbolicExponent
 
-from poksho.group.ristretto import RistrettoPoint, RistrettoScalar
+from poksho.group.ristretto import RistrettoScalar
 from poksho.statement import Statement, Proof, Equation
 from poksho.group.ristretto import Group as RistrettoGroup
 
@@ -174,37 +174,37 @@ class IssuanceResponseStatement(NamedTuple):
     def bind_public_values(
         self, issuer_key: IssuerPublicKey, tag: BlindMACTag, request: IssuanceRequest
     ):
-        self.C_W.bind(RistrettoPoint(issuer_key.C_W))
-        self.G_w.bind(RistrettoPoint(issuer_key.system.G_w))
-        self.G_wprime.bind(RistrettoPoint(issuer_key.system.G_wprime))
-        self.G_V_div_I.bind(RistrettoPoint(issuer_key.system.G_V - issuer_key.I))
-        self.G_x0.bind(RistrettoPoint(issuer_key.system.G_x0))
-        self.G_x1.bind(RistrettoPoint(issuer_key.system.G_x1))
+        self.C_W.bind(issuer_key.C_W)
+        self.G_w.bind(issuer_key.system.G_w)
+        self.G_wprime.bind(issuer_key.system.G_wprime)
+        self.G_V_div_I.bind(issuer_key.system.G_V / issuer_key.I)
+        self.G_x0.bind(issuer_key.system.G_x0)
+        self.G_x1.bind(issuer_key.system.G_x1)
         for G_y, G_y_value in zip(self.G_ys, issuer_key.system.G_ys):
-            G_y.bind(RistrettoPoint(G_y_value))
-        self.S1.bind(RistrettoPoint(tag.S.c1))
+            G_y.bind(G_y_value)
+        self.S1.bind(tag.S.c1)
         for C1, C_value in zip(self.C1s, request.blinded_attributes):
-            C1.bind(RistrettoPoint(C_value.c1))
-        self.G.bind(RistrettoPoint(issuer_key.system.G))
-        self.S2.bind(RistrettoPoint(tag.S.c2))
+            C1.bind(C_value.c1)
+        self.G.bind(issuer_key.system.G)
+        self.S2.bind(tag.S.c2)
         for C2, C_value in zip(self.C2s, request.blinded_attributes):
-            C2.bind(RistrettoPoint(C_value.c2))
-        self.Y.bind(RistrettoPoint(request.blinding_key.key))
+            C2.bind(C_value.c2)
+        self.Y.bind(request.blinding_key.key)
         for M, M_value in zip(self.Ms, request.clear_attributes):
-            M.bind(RistrettoPoint(M_value))
-        self.U.bind(RistrettoPoint(tag.U))
-        self.U_raised_to_t.bind(RistrettoPoint(tag.U) ** RistrettoScalar(tag.t))
+            M.bind(M_value)
+        self.U.bind(tag.U)
+        self.U_raised_to_t.bind(tag.U ** tag.t)
 
     def bind_secret_values(
         self, issuer_key: IssuerKeyPair, encryption_secret_nonce: RistrettoScalar
     ):
-        self.w.bind(RistrettoScalar(issuer_key.secret.w))
-        self.wprime.bind(RistrettoScalar(issuer_key.secret.wprime))
-        self.x0.bind(RistrettoScalar(issuer_key.secret.x0))
-        self.x1.bind(RistrettoScalar(issuer_key.secret.x1))
+        self.w.bind(issuer_key.secret.w)
+        self.wprime.bind(issuer_key.secret.wprime)
+        self.x0.bind(issuer_key.secret.x0)
+        self.x1.bind(issuer_key.secret.x1)
         for y, y_value in zip(self.ys, issuer_key.secret.ys):
-            y.bind(RistrettoScalar(y_value))
-        self.rprime.bind(RistrettoScalar(encryption_secret_nonce))
+            y.bind(y_value)
+        self.rprime.bind(encryption_secret_nonce)
 
     def prove(self) -> Proof:
         return self.statement.prove()

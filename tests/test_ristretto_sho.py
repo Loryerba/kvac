@@ -1,8 +1,8 @@
 from curve25519_dalek.ristretto import CompressedRistretto
 from curve25519_dalek.scalar import Scalar
 
-from poksho.poksho.group.ristretto import RistrettoPoint as GroupRistrettoPoint
-from poksho.poksho.group.ristretto import RistrettoScalar as GroupRistrettoScalar
+from poksho.group.ristretto import RistrettoPoint as GroupRistrettoPoint
+from poksho.group.ristretto import RistrettoScalar as GroupRistrettoScalar
 
 from kvac import RistrettoSho
 

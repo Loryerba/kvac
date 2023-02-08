@@ -7,8 +7,8 @@ from __future__ import annotations
 from typing import NamedTuple
 import secrets
 
-from curve25519_dalek.ristretto import RistrettoPoint
-from curve25519_dalek.scalar import Scalar as RistrettoScalar
+from poksho.group.ristretto import RistrettoPoint, RistrettoScalar
+
 from kvac.ristretto_sho import RistrettoSho
 
 
@@ -49,8 +49,8 @@ class ElGamalPublicKey(NamedTuple):
             secrets.token_bytes(256),
         )
         r = sho.get_scalar()
-        c1 = self.base * r
-        c2 = message + (self.key * r)
+        c1 = self.base ** r
+        c2 = message * (self.key ** r)
         return ElGamalCiphertextWithSecretNonce(
             ciphertext=ElGamalCiphertext(c1=c1, c2=c2), r=r
         )
@@ -69,12 +69,12 @@ class ElGamalKeyPair(NamedTuple):
             b"kvac.elgamal.ElGamalKeyPair.generate", secrets.token_bytes(256)
         )
         secret = sho.get_scalar()
-        public = ElGamalPublicKey(key=base * secret, base=base)
+        public = ElGamalPublicKey(key=base ** secret, base=base)
         return cls(secret=secret, public=public)
 
     def decrypt(self, ciphertext: ElGamalCiphertext) -> RistrettoPoint:
         """Decrypts a single ciphertext."""
-        return ciphertext.c2 - (ciphertext.c1 * self.secret)
+        return ciphertext.c2 / (ciphertext.c1 ** self.secret)
 
     def encrypt(self, message: RistrettoPoint) -> ElGamalCiphertext:
         """Encrypts a message using this key pair."""

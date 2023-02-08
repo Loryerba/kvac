@@ -3,7 +3,7 @@ from typing import List, NamedTuple, Tuple
 
 from poksho.equation import Element as SymbolicElement, Exponent as SymbolicExponent
 
-from poksho.group.ristretto import RistrettoPoint, RistrettoScalar
+from poksho.group.ristretto import RistrettoPoint
 from poksho.statement import Statement, Proof, Equation
 from poksho.group.ristretto import Group as RistrettoGroup
 
@@ -163,20 +163,20 @@ class IssuanceRequestStatement(NamedTuple):
         commitment: BlindAttributeCommitment,
     ):
 
-        self.Y.bind(RistrettoPoint(user_key.key))
-        self.G.bind(RistrettoPoint(issuer_key.system.G))
+        self.Y.bind(user_key.key)
+        self.G.bind(issuer_key.system.G)
 
         for C1, attribute in zip(self.C1s, blinded_attributes):
-            C1.bind(RistrettoPoint(attribute.c1))
+            C1.bind(attribute.c1)
         for C2_div_J, attribute, J in zip(
             self.C2s_div_Js, blinded_attributes, commitment.Js
         ):
-            C2_div_J.bind(RistrettoPoint(attribute.c2 - J))
+            C2_div_J.bind(attribute.c2 / J)
 
-        self.J_r.bind(RistrettoPoint(commitment.Jr))
-        self.G_r.bind(RistrettoPoint(issuer_key.system.G_r))
+        self.J_r.bind(commitment.Jr)
+        self.G_r.bind(issuer_key.system.G_r)
         for inverse_G_j, G_j_value in zip(self.inverse_G_js, issuer_key.system.G_js):
-            inverse_G_j.bind(RistrettoPoint(-G_j_value))
+            inverse_G_j.bind(-G_j_value)
 
     def bind_secret_values(
         self,
@@ -184,10 +184,10 @@ class IssuanceRequestStatement(NamedTuple):
         commitment: BlindAttributeCommitmentWithSecretNonce,
         blinded_attributes: List[ElGamalCiphertextWithSecretNonce],
     ):
-        self.y.bind(RistrettoScalar(user_key.secret))
-        self.j_r.bind(RistrettoScalar(commitment.j_r))
+        self.y.bind(user_key.secret)
+        self.j_r.bind(commitment.j_r)
         for r, blind_attribute in zip(self.rs, blinded_attributes):
-            r.bind(RistrettoScalar(blind_attribute.r))
+            r.bind(blind_attribute.r)
 
     def prove(self) -> Proof:
         return self.statement.prove()

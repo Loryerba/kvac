@@ -1,1 +1,2 @@
 git+https://github.com/tgalal/python-curve25519-dalek@0.0.3#egg=curve25519-dalek
+./poksho

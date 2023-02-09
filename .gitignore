@@ -11,6 +11,9 @@ build
 *.swp
 env
 venv
+.vscode
+Pipfile
+Pipfile.lock
 
 ### Linux ###
 *~

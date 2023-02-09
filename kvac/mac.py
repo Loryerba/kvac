@@ -7,8 +7,7 @@ https://signal.org/blog/pdfs/signal_private_group_system.pdf.
 from typing import List, NamedTuple, Tuple
 import secrets
 
-from curve25519_dalek.ristretto import RistrettoPoint
-from curve25519_dalek.scalar import Scalar
+from poksho.group.ristretto import RistrettoPoint, RistrettoScalar
 
 from kvac.ristretto_sho import RistrettoSho
 from kvac.issuer_key import IssuerKeyPair
@@ -19,7 +18,7 @@ from kvac.elgamal import ElGamalCiphertext, ElGamalKeyPair, ElGamalPublicKey
 class MACTag(NamedTuple):
     """Represents an Algebraic MAC tag."""
 
-    t: Scalar
+    t: RistrettoScalar
     U: RistrettoPoint
     V: RistrettoPoint
 
@@ -27,7 +26,7 @@ class MACTag(NamedTuple):
 class BlindMACTag(NamedTuple):
     """Represents an Algebraic MAC tag on blinded attributes."""
 
-    t: Scalar
+    t: RistrettoScalar
     U: RistrettoPoint
     S: ElGamalCiphertext  # encryption of V
 
@@ -60,7 +59,7 @@ class MAC:
         user_key: ElGamalPublicKey,
         clear_attributes: List[RistrettoPoint],
         blinded_attributes: List[ElGamalCiphertext],
-    ) -> Tuple[BlindMACTag, Scalar]:
+    ) -> Tuple[BlindMACTag, RistrettoScalar]:
         """Calculate a tag for the attributes. Attributes can be blinded by
         encrypting them with ElGamal encryption under the user_key.
 
@@ -81,8 +80,8 @@ class MAC:
         for attribute, y in zip(
             blinded_attributes, self.key.secret.ys[len(clear_attributes) :]
         ):
-            c1 += attribute.c1 * y
-            c2 += attribute.c2 * y
+            c1 *= attribute.c1 ** y
+            c2 *= attribute.c2 ** y
 
         return (
             BlindMACTag(
@@ -95,7 +94,7 @@ class MAC:
         self,
         user_key: ElGamalPublicKey,
         clear_attributes: List[RistrettoPoint],
-        blinded_attributes: List[RistrettoPoint],
+        blinded_attributes: List[ElGamalCiphertext],
     ) -> BlindMACTag:
         """Calculate a tag for the attributes. Attributes can be blinded by
         encrypting them with ElGamal encryption under the user_key."""
@@ -115,7 +114,7 @@ class MAC:
 
     def _calculate_V(
         self,
-        t: Scalar,
+        t: RistrettoScalar,
         U: RistrettoPoint,
         attributes: List[RistrettoPoint],
     ) -> RistrettoPoint:
@@ -128,8 +127,8 @@ class MAC:
         pk = self.key.public
         sk = self.key.secret
 
-        V = pk.system.G_w * sk.w + U * (sk.x0 + sk.x1 * t)
+        V = pk.system.G_w ** sk.w * U ** (sk.x0 + sk.x1 * t)
         for Mn, yn in zip(attributes, sk.ys):
-            V += Mn * yn
+            V *= Mn ** yn
 
         return V

@@ -2,8 +2,7 @@ from __future__ import annotations
 import secrets
 from typing import List, NamedTuple
 
-from curve25519_dalek.ristretto import RistrettoPoint
-from curve25519_dalek.scalar import Scalar
+from poksho.group.ristretto import RistrettoPoint, RistrettoScalar
 
 from kvac.ristretto_sho import RistrettoSho
 from kvac.system_params import SystemParams
@@ -23,11 +22,11 @@ class IssuerPublicKey(NamedTuple):
 
 class IssuerSecretKey(NamedTuple):
     """Represents the private key of an issuer."""
-    w: Scalar
-    wprime: Scalar
-    x0: Scalar
-    x1: Scalar
-    ys: List[Scalar]
+    w: RistrettoScalar
+    wprime: RistrettoScalar
+    x0: RistrettoScalar
+    x1: RistrettoScalar
+    ys: List[RistrettoScalar]
 
 
 class IssuerKeyPair(NamedTuple):
@@ -53,10 +52,10 @@ class IssuerKeyPair(NamedTuple):
         x1 = sho.get_scalar()
         ys = [sho.get_scalar() for _ in range(system.max_attributes)]
 
-        C_W = (system.G_w * w) + (system.G_wprime * wprime)
-        I = system.G_V - (system.G_x0 * x0) - (system.G_x1 * x1)
+        C_W = (system.G_w ** w) * (system.G_wprime ** wprime)
+        I = system.G_V / ((system.G_x0 ** x0) * (system.G_x1 ** x1))
         for G_y, y in zip(system.G_ys, ys):
-            I -= G_y * y
+            I /= G_y ** y
 
         secret = IssuerSecretKey(w=w, wprime=wprime, x0=x0, x1=x1, ys=ys)
         public = IssuerPublicKey(C_W=C_W, I=I, system=system)

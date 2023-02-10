@@ -1,2 +1,4 @@
-git+https://github.com/tgalal/python-curve25519-dalek@0.0.3#egg=curve25519-dalek
+pytest~=7.2.0
+
+git+https://github.com/tgalal/python-curve25519-dalek@0.0.4#egg=curve25519-dalek
 ./poksho

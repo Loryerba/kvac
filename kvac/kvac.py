@@ -5,7 +5,7 @@ from kvac.mac import MACTag
 from kvac.issuer_key import IssuerPublicKey, IssuerKeyPair
 from kvac.elgamal import ElGamalKeyPair
 from kvac.commitment import BlindAttributeCommitment
-from kvac.errors import VerificationError
+from kvac.exceptions import VerificationFailure
 from kvac.issuance_request import IssuanceRequest
 from kvac.issuance_response import IssuanceResponse
 
@@ -109,7 +109,7 @@ class KVAC:
         response: IssuanceResponse,
     ):
         if response.verify(issuer_key, request) is False:
-            raise VerificationError(
+            raise VerificationFailure(
                 "Invalid issuance response. This could mean that the issuer is malicious."
             )
 
@@ -196,12 +196,12 @@ class KVAC:
                 )
 
             if request.commitment != commitment:
-                raise VerificationError(
+                raise VerificationFailure(
                     "Commitment in request does not match given commitment."
                 )
 
         if request.verify(issuer_key.public, request.blinding_key) is False:
-            raise VerificationError(
+            raise VerificationFailure(
                 "Invalid issuance request. This could mean that the user is malicious."
             )
 

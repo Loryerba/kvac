@@ -3,11 +3,6 @@ from typing import NamedTuple
 
 from poksho.group.ristretto import RistrettoPoint, RistrettoScalar
 
-# from curve25519_dalek.ristretto import CompressedRistretto
-# from curve25519_dalek.constants import RISTRETTO_BASEPOINT_POINT
-
-from poksho.group.ristretto import DALEK_RISTRETTO_BASE_POINT
-
 from kvac.ristretto_sho import RistrettoSho
 from kvac.exceptions import ZkGroupVerificationFailure, DeserializationFailure
 
@@ -56,9 +51,9 @@ class EncryptionParams(NamedTuple):
 
 class KeyPair(NamedTuple):
     """
-    This class represents a key pair for encryption. It includes the private parameters RistrettoScalars
-    a1 and a2, the public parameter RistrettoPoint A, and a bytes representation of a label that
-    is used to instantiate RistrettoSho objects for hashing into G.
+    This class represents a key pair for encryption. It includes the private parameters
+    RistrettoScalars a1 and a2, the public parameter RistrettoPoint A, and a bytes
+    representation of a label that is used to instantiate RistrettoSho objects for hashing into G.
     For a high-level intuition see "The Signal Private Group System and Anonymous Credentials
     Supporting Verifiable Encryption" (Chase et al., 2020).
     This implementation is similar to uid encryption of Signals implementation. It can only encrypt

@@ -1,4 +1,0 @@
-[submodule "poksho"]
-	path = poksho
-	url = git@github.com:hpicrypto/poksho.git
-	branch = main

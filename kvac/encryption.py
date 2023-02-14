@@ -62,8 +62,7 @@ class KeyPair(NamedTuple):
     https://github.com/signalapp/libsignal/blob/main/rust/zkgroup/src/crypto/uid_encryption.rs
     """
 
-    a1: RistrettoScalar
-    a2: RistrettoScalar
+    a: PrivateKey
     A: PublicKey
 
     @classmethod
@@ -81,8 +80,9 @@ class KeyPair(NamedTuple):
         private_sho = RistrettoSho(b'kvac.generic_encryption.KeyPair.derive_from', master_key)
         a1 = private_sho.get_scalar()
         a2 = private_sho.get_scalar()
+        a = PrivateKey(a1, a2)
         A = PublicKey(system.G_1 ** a1 * system.G_2 ** a2, system.G_1, system.G_2)
-        return cls(a1, a2, A)
+        return cls(a, A)
 
     def encrypt(
             self,
@@ -96,13 +96,13 @@ class KeyPair(NamedTuple):
         if len(m) != 16:
             raise ValueError('Only messages of 16 bytes are supported.')
         # M1 = HashToG(m)
-        M1 = self.hash_to_G(m)
+        M1 = hash_to_G(m)
         # M2 = EncodeToG(m)
-        M2 = self.encode_to_G(m)
+        M2 = encode_to_G(m)
         # E_1 = M1 ^ a_1
-        E_1 = M1 ** self.a1
+        E_1 = M1 ** self.a.scalar1
         # E_2 = ((E_1) ^ a_2) * M2
-        E_2 = (E_1 ** self.a2) * M2
+        E_2 = (E_1 ** self.a.scalar2) * M2
         return Ciphertext(E_1, E_2)
 
     def decrypt(
@@ -119,35 +119,24 @@ class KeyPair(NamedTuple):
             raise ZkGroupVerificationFailure()
 
         # M2' = E_2 / ((E_1) ^ a_2)
-        decrypted_M2 = ciphertext.E_2 / (ciphertext.E_1 ** self.a2)
+        decrypted_M2 = ciphertext.E_2 / (ciphertext.E_1 ** self.a.scalar2)
         # m' = DecodeFromG(M2')
         decrypted_m = decrypted_M2.to_bytes()
         # M1' = HashToG(m')
-        decrypted_M1 = self.hash_to_G(decrypted_m)
+        decrypted_M1 = hash_to_G(decrypted_m)
 
         # E_1 = M1' ^ a_1 ?
-        if ciphertext.E_1 == decrypted_M1 ** self.a1:
+        if ciphertext.E_1 == decrypted_M1 ** self.a.scalar1:
             return decrypted_m
         raise ZkGroupVerificationFailure()
-
-    @staticmethod
-    def hash_to_G(m: bytes) -> RistrettoPoint:
-        sho = RistrettoSho(b'kvac.generic_encryption.KeyPair.hashing', m)
-        M1 = sho.get_point()
-        return M1
-
-    @staticmethod
-    def encode_to_G(m: bytes) -> RistrettoPoint:
-        M2 = RistrettoPoint.from_bytes(m)
-        return M2
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, KeyPair):
             return False
-        return self.a1 == other.a1 and self.a2 == other.a2 and self.A == other.A
+        return self.a == other.a and self.A == other.A
 
     def __bytes__(self) -> bytes:
-        return bytes(self.a1) + bytes(self.a2) + bytes(self.A)
+        return bytes(self.a) + bytes(self.A)
 
     @classmethod
     def from_bytes(cls, key_pair_bytes: bytes) -> KeyPair:
@@ -158,8 +147,9 @@ class KeyPair(NamedTuple):
         public_key = RistrettoPoint.decompress_bytes(bytes(key_pair_bytes[64:96]))
         G_1 = RistrettoPoint.decompress_bytes(bytes(key_pair_bytes[96:128]))
         G_2 = RistrettoPoint.decompress_bytes(bytes(key_pair_bytes[128:160]))
+        a = PrivateKey(a1, a2)
         A = PublicKey(public_key, G_1, G_2)
-        return cls(a1, a2, A)
+        return cls(a, A)
 
 
 class Ciphertext(NamedTuple):
@@ -203,4 +193,30 @@ class PublicKey(NamedTuple):
         if not isinstance(other, PublicKey):
             return False
         return self.key == other.key
-    
+
+
+class PrivateKey(NamedTuple):
+    """Represents a private key."""
+
+    scalar1: RistrettoScalar
+    scalar2: RistrettoScalar
+
+    def __bytes__(self) -> bytes:
+        return bytes(self.scalar1)\
+            + bytes(self.scalar2)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, PrivateKey):
+            return False
+        return self.scalar1 == other.scalar1 and self.scalar2 == other.scalar2
+
+
+def hash_to_G(m: bytes) -> RistrettoPoint:
+    sho = RistrettoSho(b'kvac.generic_encryption.KeyPair.hashing', m)
+    M1 = sho.get_point()
+    return M1
+
+
+def encode_to_G(m: bytes) -> RistrettoPoint:
+    M2 = RistrettoPoint.from_bytes(m)
+    return M2

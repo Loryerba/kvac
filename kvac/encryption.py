@@ -81,7 +81,7 @@ class KeyPair(NamedTuple):
         private_sho = RistrettoSho(b'kvac.generic_encryption.KeyPair.derive_from', master_key)
         a1 = private_sho.get_scalar()
         a2 = private_sho.get_scalar()
-        A = PublicKey(system.G_1 ** a1 * system.G_2 ** a2, (system.G_1, system.G_2))
+        A = PublicKey(system.G_1 ** a1 * system.G_2 ** a2, system.G_1, system.G_2)
         return cls(a1, a2, A)
 
     def encrypt(
@@ -147,15 +147,18 @@ class KeyPair(NamedTuple):
         return self.a1 == other.a1 and self.a2 == other.a2 and self.A == other.A
 
     def __bytes__(self) -> bytes:
-        return bytes(self.a1) + bytes(self.a2) + bytes(self.A.key.compress())
+        return bytes(self.a1) + bytes(self.a2) + bytes(self.A)
 
     @classmethod
     def from_bytes(cls, key_pair_bytes: bytes) -> KeyPair:
-        if len(key_pair_bytes) != 96:
-            raise DeserializationFailure('Provided input was not 96 bytes.')
+        if len(key_pair_bytes) != 160:
+            raise DeserializationFailure('Provided input was not 160 bytes.')
         a1 = RistrettoScalar.from_bytes(bytes(key_pair_bytes[0:32]))
         a2 = RistrettoScalar.from_bytes(bytes(key_pair_bytes[32:64]))
-        A = RistrettoPoint.decompress_bytes(bytes(key_pair_bytes[64:96]))
+        public_key = RistrettoPoint.decompress_bytes(bytes(key_pair_bytes[64:96]))
+        G_1 = RistrettoPoint.decompress_bytes(bytes(key_pair_bytes[96:128]))
+        G_2 = RistrettoPoint.decompress_bytes(bytes(key_pair_bytes[128:160]))
+        A = PublicKey(public_key, G_1, G_2)
         return cls(a1, a2, A)
 
 
@@ -188,7 +191,13 @@ class PublicKey(NamedTuple):
     """Represents a public key."""
 
     key: RistrettoPoint  # key is the actual public key.
-    base: (RistrettoPoint, RistrettoPoint)
+    base1: RistrettoPoint
+    base2: RistrettoPoint
+
+    def __bytes__(self) -> bytes:
+        return bytes(self.key.compress())\
+            + bytes(self.base1.compress())\
+            + bytes(self.base2.compress())
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, PublicKey):

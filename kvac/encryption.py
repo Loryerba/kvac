@@ -64,7 +64,7 @@ class KeyPair(NamedTuple):
 
     a1: RistrettoScalar
     a2: RistrettoScalar
-    A: RistrettoPoint
+    A: PublicKey
 
     @classmethod
     def derive_from(
@@ -81,7 +81,7 @@ class KeyPair(NamedTuple):
         private_sho = RistrettoSho(b'kvac.generic_encryption.KeyPair.derive_from', master_key)
         a1 = private_sho.get_scalar()
         a2 = private_sho.get_scalar()
-        A = system.G_1 ** a1 * system.G_2 ** a2
+        A = PublicKey(system.G_1 ** a1 * system.G_2 ** a2, (system.G_1, system.G_2))
         return cls(a1, a2, A)
 
     def encrypt(
@@ -95,11 +95,10 @@ class KeyPair(NamedTuple):
         """
         if len(m) != 16:
             raise ValueError('Only messages of 16 bytes are supported.')
-        sho = RistrettoSho(b'kvac.generic_encryption.KeyPair.hashing', m)
         # M1 = HashToG(m)
-        M1 = sho.get_point()
+        M1 = self.hash_to_G(m)
         # M2 = EncodeToG(m)
-        M2 = RistrettoPoint.from_bytes(m)
+        M2 = self.encode_to_G(m)
         # E_1 = M1 ^ a_1
         E_1 = M1 ** self.a1
         # E_2 = ((E_1) ^ a_2) * M2
@@ -123,14 +122,24 @@ class KeyPair(NamedTuple):
         decrypted_M2 = ciphertext.E_2 / (ciphertext.E_1 ** self.a2)
         # m' = DecodeFromG(M2')
         decrypted_m = decrypted_M2.to_bytes()
-        sho = RistrettoSho(b'kvac.generic_encryption.KeyPair.hashing', decrypted_m)
         # M1' = HashToG(m')
-        decrypted_M1 = sho.get_point()
+        decrypted_M1 = self.hash_to_G(decrypted_m)
 
         # E_1 = M1' ^ a_1 ?
         if ciphertext.E_1 == decrypted_M1 ** self.a1:
             return decrypted_m
         raise ZkGroupVerificationFailure()
+
+    @staticmethod
+    def hash_to_G(m: bytes) -> RistrettoPoint:
+        sho = RistrettoSho(b'kvac.generic_encryption.KeyPair.hashing', m)
+        M1 = sho.get_point()
+        return M1
+
+    @staticmethod
+    def encode_to_G(m: bytes) -> RistrettoPoint:
+        M2 = RistrettoPoint.from_bytes(m)
+        return M2
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, KeyPair):
@@ -138,7 +147,7 @@ class KeyPair(NamedTuple):
         return self.a1 == other.a1 and self.a2 == other.a2 and self.A == other.A
 
     def __bytes__(self) -> bytes:
-        return bytes(self.a1) + bytes(self.a2) + bytes(self.A.compress())
+        return bytes(self.a1) + bytes(self.a2) + bytes(self.A.key.compress())
 
     @classmethod
     def from_bytes(cls, key_pair_bytes: bytes) -> KeyPair:
@@ -173,3 +182,16 @@ class Ciphertext(NamedTuple):
         if not isinstance(other, Ciphertext):
             return False
         return self.E_1 == other.E_1 and self.E_2 == other.E_2
+
+
+class PublicKey(NamedTuple):
+    """Represents a public key."""
+
+    key: RistrettoPoint  # key is the actual public key.
+    base: (RistrettoPoint, RistrettoPoint)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, PublicKey):
+            return False
+        return self.key == other.key
+    

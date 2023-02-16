@@ -62,9 +62,8 @@ class KeyPair(NamedTuple):
     https://github.com/signalapp/libsignal/blob/main/rust/zkgroup/src/crypto/uid_encryption.rs
     """
 
-    a1: RistrettoScalar
-    a2: RistrettoScalar
-    A: RistrettoPoint
+    secret: SecretKey
+    public: PublicKey
 
     @classmethod
     def derive_from(
@@ -81,8 +80,9 @@ class KeyPair(NamedTuple):
         private_sho = RistrettoSho(b'kvac.generic_encryption.KeyPair.derive_from', master_key)
         a1 = private_sho.get_scalar()
         a2 = private_sho.get_scalar()
-        A = system.G_1 ** a1 * system.G_2 ** a2
-        return cls(a1, a2, A)
+        secret = SecretKey(a1, a2)
+        public = PublicKey(system.G_1 ** a1 * system.G_2 ** a2, system.G_1, system.G_2)
+        return cls(secret, public)
 
     def encrypt(
             self,
@@ -95,15 +95,14 @@ class KeyPair(NamedTuple):
         """
         if len(m) != 16:
             raise ValueError('Only messages of 16 bytes are supported.')
-        sho = RistrettoSho(b'kvac.generic_encryption.KeyPair.hashing', m)
         # M1 = HashToG(m)
-        M1 = sho.get_point()
+        M1 = hash_to_G(m)
         # M2 = EncodeToG(m)
-        M2 = RistrettoPoint.from_bytes(m)
+        M2 = encode_to_G(m)
         # E_1 = M1 ^ a_1
-        E_1 = M1 ** self.a1
+        E_1 = M1 ** self.secret.scalar1
         # E_2 = ((E_1) ^ a_2) * M2
-        E_2 = (E_1 ** self.a2) * M2
+        E_2 = (E_1 ** self.secret.scalar2) * M2
         return Ciphertext(E_1, E_2)
 
     def decrypt(
@@ -120,34 +119,37 @@ class KeyPair(NamedTuple):
             raise ZkGroupVerificationFailure()
 
         # M2' = E_2 / ((E_1) ^ a_2)
-        decrypted_M2 = ciphertext.E_2 / (ciphertext.E_1 ** self.a2)
+        decrypted_M2 = ciphertext.E_2 / (ciphertext.E_1 ** self.secret.scalar2)
         # m' = DecodeFromG(M2')
         decrypted_m = decrypted_M2.to_bytes()
-        sho = RistrettoSho(b'kvac.generic_encryption.KeyPair.hashing', decrypted_m)
         # M1' = HashToG(m')
-        decrypted_M1 = sho.get_point()
+        decrypted_M1 = hash_to_G(decrypted_m)
 
         # E_1 = M1' ^ a_1 ?
-        if ciphertext.E_1 == decrypted_M1 ** self.a1:
+        if ciphertext.E_1 == decrypted_M1 ** self.secret.scalar1:
             return decrypted_m
         raise ZkGroupVerificationFailure()
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, KeyPair):
             return False
-        return self.a1 == other.a1 and self.a2 == other.a2 and self.A == other.A
+        return self.secret == other.secret and self.public == other.public
 
     def __bytes__(self) -> bytes:
-        return bytes(self.a1) + bytes(self.a2) + bytes(self.A.compress())
+        return bytes(self.secret) + bytes(self.public)
 
     @classmethod
     def from_bytes(cls, key_pair_bytes: bytes) -> KeyPair:
-        if len(key_pair_bytes) != 96:
-            raise DeserializationFailure('Provided input was not 96 bytes.')
+        if len(key_pair_bytes) != 160:
+            raise DeserializationFailure('Provided input was not 160 bytes.')
         a1 = RistrettoScalar.from_bytes(bytes(key_pair_bytes[0:32]))
         a2 = RistrettoScalar.from_bytes(bytes(key_pair_bytes[32:64]))
-        A = RistrettoPoint.decompress_bytes(bytes(key_pair_bytes[64:96]))
-        return cls(a1, a2, A)
+        public_key = RistrettoPoint.decompress_bytes(bytes(key_pair_bytes[64:96]))
+        G_1 = RistrettoPoint.decompress_bytes(bytes(key_pair_bytes[96:128]))
+        G_2 = RistrettoPoint.decompress_bytes(bytes(key_pair_bytes[128:160]))
+        secret = SecretKey(a1, a2)
+        public = PublicKey(public_key, G_1, G_2)
+        return cls(secret, public)
 
 
 class Ciphertext(NamedTuple):
@@ -173,3 +175,48 @@ class Ciphertext(NamedTuple):
         if not isinstance(other, Ciphertext):
             return False
         return self.E_1 == other.E_1 and self.E_2 == other.E_2
+
+
+class PublicKey(NamedTuple):
+    """Represents a public key."""
+
+    key: RistrettoPoint  # key is the actual public key.
+    base1: RistrettoPoint
+    base2: RistrettoPoint
+
+    def __bytes__(self) -> bytes:
+        return bytes(self.key.compress())\
+            + bytes(self.base1.compress())\
+            + bytes(self.base2.compress())
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, PublicKey):
+            return False
+        return self.key == other.key
+
+
+class SecretKey(NamedTuple):
+    """Represents a secret key."""
+
+    scalar1: RistrettoScalar
+    scalar2: RistrettoScalar
+
+    def __bytes__(self) -> bytes:
+        return bytes(self.scalar1)\
+            + bytes(self.scalar2)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, SecretKey):
+            return False
+        return self.scalar1 == other.scalar1 and self.scalar2 == other.scalar2
+
+
+def hash_to_G(m: bytes) -> RistrettoPoint:
+    sho = RistrettoSho(b'kvac.generic_encryption.KeyPair.hashing', m)
+    M1 = sho.get_point()
+    return M1
+
+
+def encode_to_G(m: bytes) -> RistrettoPoint:
+    M2 = RistrettoPoint.from_bytes(m)
+    return M2

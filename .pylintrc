@@ -9,6 +9,9 @@ disable=missing-module-docstring,missing-function-docstring,invalid-name,import-
 max-branches=15
 max-args=8
 
+[tool.pylint.format]
+max-line-length=120
+
 [tool.pylint.string]
 check-quote-consistency = true
 check-str-concat-over-line-jumps = true

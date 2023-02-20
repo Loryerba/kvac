@@ -2,7 +2,7 @@ import pytest
 
 # pylint doesn't recognize the necessary pytest fixtures.
 # pylint: disable-next=unused-import
-from helpers import ExampleCredential, issuer_key, attributes, sho
+from common import ExampleCredential, issuer_key, attributes, sho
 
 from kvac.kvac import IssuanceResponse
 from kvac.mac import MAC

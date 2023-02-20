@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from enum import Enum
-from typing import List, Tuple, NamedTuple, Any, Optional
+from typing import List, Tuple, NamedTuple, Any, Optional, Type
 
 from poksho.group.ristretto import RistrettoPoint
 
@@ -19,11 +20,19 @@ from kvac.verifiable_encryption import KeyPair as HidingKeyPair, \
     MessageToEncrypt as MessageToHide
 
 
+def to_list(value_or_iterable):
+    """Converts an iterable to a list or produces a list with a single element
+    if the argument is not iterable."""
+    if isinstance(value_or_iterable, Iterable):
+        return list(value_or_iterable)
+    return [value_or_iterable]
+
 class AttributeValue(NamedTuple):
     """AttributeValue is the object that stores the value of an attribute in an
     instance of KVAC."""
 
     value: Tuple[RistrettoPoint] | AttributeRepresentationForHiding
+    scalar: bool  # True if this is a scalar attribute. Scalar attributes can not be hidden.
     blind: bool   # True if this is a blind attribute during issuance.
     hidden: bool  # True if this is a hidden attribute during presentation.
 
@@ -35,40 +44,69 @@ class Attribute:
     a KVAC is stored in the KVAC as a private instance variable of type AttributeValue.
     See the documentation of the KVAC class for usage information."""
 
-    def __init__(self, blind: bool = False, hidden: bool = False):
+    def __init__(self, *, blind: bool = False, hidden: bool = False, scalar: bool = False):
+        if scalar and hidden:
+            raise ValueError("scalar attribute can not be hidden")
+
         self._blind: bool = blind
         self._hidden: bool = hidden
+        self._scalar: bool = scalar
         self._name: str = ""
         self._private_name: str = ""
+        self._index: int
 
-    def __set_name__(self, owner, name):
+    def __set_name__(self, owner: Type[KVAC], name: str):
         self._name = name
         self._private_name = f"_{name}"
 
-    def __get__(self, obj, objtype=None) -> Any:
-        t = self.get_internal_representation(obj)
-        if isinstance(t, AttributeRepresentationForHiding):
-            return t.decode()
-        return t[0]
+        self._index = self.index_in_kvac(owner)
 
-    def get_internal_representation(self, obj):
-        value = getattr(obj, self._private_name, None)
-        if value is None:
+    def __get__(self, obj: KVAC, objtype: Optional[Type] = None) -> Any:
+        attribute = getattr(obj, self._private_name, None)
+        if attribute is None:
+            raise AttributeError(f"{obj} has no attribute '{self.name}'")
+
+        if self.hidden:
+            return attribute.value.decode()
+
+        return attribute.value
+
+    def get_internal_representation(self, obj: KVAC):
+        attribute = getattr(obj, self._private_name, None)
+        if attribute is None:
             raise AttributeError(f"attribute '{self.name}' has no value assigned")
-        return value.value
 
-    def __set__(self, obj, value):
+        if self.scalar:
+            return obj.issuer_public_key.system.G_ms[self.index] ** attribute.value
+
+        return attribute.value
+
+    def __set__(self, obj: KVAC, value: Any):
         if getattr(obj, self._private_name, None) is not None:
             raise AttributeError(f"can't set attribute '{self.name}' more than once")
-        if self._hidden:
+
+        if self.hidden:
             if not isinstance(value, MessageToHide):
                 raise ValueError(f"attribute '{self.name}' is a hidden attribute, please specify a "
                                  f"MessageToHide object")
             value = AttributeRepresentationForHiding.encode(value)
-        else:
-            value = (value,)
 
-        setattr(obj, self._private_name, AttributeValue(value=value, blind=self.blind, hidden=self.hidden))
+        setattr(obj, self._private_name, AttributeValue(value=value,
+                                                        blind=self.blind,
+                                                        hidden=self.hidden,
+                                                        scalar=self.scalar))
+
+    def index_in_kvac(self, owner: Type[KVAC]):
+        index = 0
+        for attribute in owner.attributes():
+            if attribute is self:
+                break
+
+            if attribute.hidden:
+                index += 2 # hidden attributes consist of 2 attributes internally
+            else:
+                index += 1
+        return index
 
     @property
     def blind(self):
@@ -81,9 +119,19 @@ class Attribute:
         return self._hidden
 
     @property
+    def scalar(self):
+        """Returns whether the attribute is a scalar."""
+        return self._scalar
+
+    @property
     def name(self):
         """Returns the name of the attribute in the KVAC."""
         return self._name
+
+    @property
+    def index(self):
+        """Returns the position of this attribute in the list of all attributes of the credential."""
+        return self._index
 
 
 class KVAC:
@@ -209,11 +257,11 @@ class KVAC:
         hidden during presentation. However, during the issuance, we can treat these
         components as separate attributes.
         """
-        return [
-            component
-            for attribute in self.clear_attributes()
-            for component in attribute.get_internal_representation(self)
-        ]
+        attributes = []
+        for attribute in self.clear_attributes():
+            attributes += to_list(attribute.get_internal_representation(self))
+        return attributes
+
 
     @classmethod
     def blind_attributes(cls) -> List[Attribute]:
@@ -231,11 +279,10 @@ class KVAC:
         hidden during presentation. However, during the issuance, we can treat these
         components as separate attributes.
         """
-        return [
-            component
-            for attribute in self.blind_attributes()
-            for component in attribute.get_internal_representation(self)
-        ]
+        attributes = []
+        for attribute in self.blind_attributes():
+            attributes += to_list(attribute.get_internal_representation(self))
+        return attributes
 
     def request(self) -> Tuple[IssuanceRequest, BlindAttributeCommitment]:
         """Request a new KVAC.
@@ -293,6 +340,7 @@ class KVAC:
         return IssuanceResponse.new(issuer_key, request)
 
     def activate(self, response: IssuanceResponse):
+        """Activates the credential with a tag from an issuance response so that it can be presented."""
         if self.process_stage != self.ProcessStage.ISSUANCE_REQUESTED:
             raise CallNotAllowed(
                 "Cannot activate the credential before having created a issuance request."
@@ -337,12 +385,8 @@ class KVAC:
         # We need to use the attributes in this order to match the order of the issuance (proof)
         # during presentation.
         for attribute in self.clear_attributes() + self.blind_attributes():
-            if attribute.hidden:
-                hiding_pattern.append(True)
-                attributes.append(attribute.get_internal_representation(self))
-            else:
-                hiding_pattern.append(False)
-                attributes.append(getattr(self, attribute.name))
+            hiding_pattern.append(attribute.hidden)
+            attributes.append(attribute.get_internal_representation(self))
 
         hiding_keys = hiding_keys or []
         if 0 < len(self.hidden_attributes()) != len(hiding_keys):

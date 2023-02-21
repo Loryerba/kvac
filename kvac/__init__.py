@@ -6,3 +6,4 @@ from .system_params import SystemParams
 from .ristretto_sho import RistrettoSho
 from .exceptions import ZkGroupVerificationFailure, DeserializationFailure
 from .verifiable_encryption import EncryptionParams, KeyPair, Ciphertext
+from .kvac import KVAC, Attribute

@@ -17,7 +17,7 @@ def number_of_attributes():
 @pytest.fixture
 def mac(number_of_attributes):
     system = kvac.SystemParams.generate(number_of_attributes, "test")
-    key = kvac.IssuerKeyPair.generate(system)
+    key = kvac.IssuerKeyPair.generate(system, number_of_attributes)
     return kvac.MAC(key)
 
 

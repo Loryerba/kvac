@@ -1,6 +1,8 @@
 # pylint doesn't recognize the necessary pytest fixtures.
 # pylint: disable-next=unused-import
-from common import ExampleCredential, valid_credential, attributes, sho, issuer_key, master_key, hiding_keys
+from common import (
+    ExampleCredential, valid_credential, attributes, sho, issuer_key, system_params, master_key, hiding_keys
+)
 from kvac.credential_presentation import HiddenAttribute
 
 from kvac.verifiable_encryption import AttributeRepresentationForEncryption as AttributeRepresentationForHiding, \

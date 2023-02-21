@@ -6,7 +6,6 @@ from typing import List, Tuple, NamedTuple, Any, Optional, Type
 
 from poksho.group.ristretto import RistrettoPoint
 
-from kvac import SystemParams
 from kvac.credential_presentation import CredentialPresentation
 from kvac.mac import MACTag
 from kvac.issuer_key import IssuerPublicKey, IssuerKeyPair
@@ -223,16 +222,12 @@ class KVAC:
         self.process_stage = self.ProcessStage.CREDENTIAL_INACTIVE
 
     @classmethod
-    def generate_system(cls, label: str) -> SystemParams:
+    def number_of_attribute_components(cls) -> int:
         """
-        Generates system parameters with the correct number of attributes for this credential.
-        For details on the label, see the SystemParams#generate method.
+        Returns the total number of attribute components across all attributes of this credential.
+        Should be used to determine how many attribute an issuer key pair should have.
         """
-
-        return SystemParams.generate(
-            len(cls.revealed_attributes()) + 2 * len(cls.hidden_attributes()),
-            label
-        )
+        return len(cls.revealed_attributes()) + 2 * len(cls.hidden_attributes())
 
     @classmethod
     def attributes(cls) -> List[Attribute]:
@@ -261,7 +256,6 @@ class KVAC:
         for attribute in self.clear_attributes():
             attributes += to_list(attribute.get_internal_representation(self))
         return attributes
-
 
     @classmethod
     def blind_attributes(cls) -> List[Attribute]:

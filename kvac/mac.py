@@ -100,7 +100,7 @@ class MAC:
         c1 = encrypted_partial_V.ciphertext.c1
         c2 = encrypted_partial_V.ciphertext.c2
         for attribute, y in zip(
-            blinded_attributes, self.key.secret.ys[len(clear_attributes) :]
+            blinded_attributes, self.key.secret.ys[len(clear_attributes):]
         ):
             c1 *= attribute.c1 ** y
             c2 *= attribute.c2 ** y

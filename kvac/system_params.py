@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, NamedTuple
 from poksho.group.ristretto import RistrettoPoint
 
+from kvac.verifiable_encryption import EncryptionParams
 from kvac.ristretto_sho import RistrettoSho
 
 
@@ -30,22 +31,35 @@ class SystemParams(NamedTuple):
     # Used as a base for ElGamal encryption.
     G: RistrettoPoint
 
+    # Separate encryption params for blinding of each attribute.
+    G_es: List[EncryptionParams]
+
     @classmethod
-    def generate(cls, max_attributes: int, label: str) -> SystemParams:
+    def generate(cls, num_attributes: int, label: str) -> SystemParams:
         """Generates system parameters. There is no randomness involved, only
         the label serves as a seed. The label should be a nothing-up-my-sleeve
         number.
-        max_attributes is the maximum number of attributes the generated parameters
-        will support."""
+        num_attributes is the number of attributes the generated parameters will support.
+        Note that ONLY credentials with this EXACT number of attributes will work with the
+        system params, as the issuer will create a single commitment on all G_ys and, therefore,
+        proof verification will fail if some credential doesn't make use of all of them.
+        """
 
+        # pylint: disable=too-many-locals
         sho = RistrettoSho(b"kvac.system_params.SystemParams.generate", label.encode())
 
         G_w, G_wprime, G_x0, G_x1, G_V, G_z = [sho.get_point() for _ in range(6)]
-        G_ys = [sho.get_point() for _ in range(max_attributes)]
-        G_ms = [sho.get_point() for _ in range(max_attributes)]
-        G_js = [sho.get_point() for _ in range(max_attributes)]
+        G_ys = [sho.get_point() for _ in range(num_attributes)]
+        G_ms = [sho.get_point() for _ in range(num_attributes)]
+        G_js = [sho.get_point() for _ in range(num_attributes)]
         G_r = sho.get_point()
         G = sho.get_point()
+        G_es = [
+            EncryptionParams.generate(label.encode(), f"attribute_{i}".encode())
+            # As every hidden attribute consists of two components, we need
+            # at most one encryption params set for every two attributes.
+            for i in range(num_attributes // 2)
+        ]
 
         return cls(
             G_w=G_w,
@@ -59,6 +73,7 @@ class SystemParams(NamedTuple):
             G_js=G_js,
             G_r=G_r,
             G=G,
+            G_es=G_es
         )
 
     @property

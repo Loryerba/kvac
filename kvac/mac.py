@@ -3,16 +3,24 @@ This module implements the algebraic MAC from
 https://signal.org/blog/pdfs/signal_private_group_system.pdf.
 """
 
-
 from typing import List, NamedTuple, Tuple
 import secrets
 
 from poksho.group.ristretto import RistrettoPoint, RistrettoScalar
 
 from kvac.ristretto_sho import RistrettoSho
-from kvac.issuer_key import IssuerKeyPair
+from kvac.issuer_key import IssuerKeyPair, IssuerPublicKey
 
 from kvac.elgamal import ElGamalCiphertext, ElGamalKeyPair, ElGamalPublicKey
+
+
+class TagCommitment(NamedTuple):
+    """Represents a commitment for an Algebraic MAC tag."""
+
+    Z: RistrettoPoint
+    C_x0: RistrettoPoint
+    C_x1: RistrettoPoint
+    C_V: RistrettoPoint
 
 
 class MACTag(NamedTuple):
@@ -21,6 +29,20 @@ class MACTag(NamedTuple):
     t: RistrettoScalar
     U: RistrettoPoint
     V: RistrettoPoint
+
+    def commit_and_return_secret_nonce(self, issuer_key: IssuerPublicKey) -> Tuple[TagCommitment, RistrettoScalar]:
+        sho = RistrettoSho(
+            b"kvac.mac.MACTag.commit_and_return_secret_nonce",
+            secrets.token_bytes(256)
+        )
+        z = sho.get_scalar()
+
+        Z = issuer_key.I ** z
+        C_x0 = issuer_key.system.G_x0 ** z * self.U
+        C_x1 = issuer_key.system.G_x1 ** z * self.U ** self.t
+        C_V = issuer_key.system.G_V ** z * self.V
+
+        return TagCommitment(Z=Z, C_x0=C_x0, C_x1=C_x1, C_V=C_V), z
 
 
 class BlindMACTag(NamedTuple):

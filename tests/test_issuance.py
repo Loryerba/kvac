@@ -4,7 +4,6 @@ import pytest
 # pylint: disable-next=unused-import
 from helpers import ExampleCredential, issuer_key, attributes, sho
 
-from kvac.commitment import BlindAttributeCommitment
 from kvac.kvac import IssuanceResponse
 from kvac.mac import MAC
 
@@ -20,58 +19,61 @@ class TestIssuanceRequest:
         assert len(ExampleCredential.attributes()) == 4
 
     def test_arguments_list_lengths(self, issuer_key, attributes):
-        request, _ = ExampleCredential.request(
+        credential = ExampleCredential(
             issuer_key=issuer_key.public, **attributes
         )
-        assert len(request.clear_attributes) == 2
-        assert len(request.blinded_attributes) == 2
+
+        request, _ = credential.request()
+
+        # We only have two attributes each, but both one blind and one unblind attribute
+        # consists of two components because they need to be hidden during presentation.
+        assert len(request.clear_attributes) == 3
+        assert len(request.blinded_attributes) == 3
 
     def test_arguments_in_right_list(self, issuer_key, attributes):
-        request, user_key = ExampleCredential.request(
+        credential = ExampleCredential(
             issuer_key=issuer_key.public, **attributes
         )
+        request, _ = credential.request()
 
-        # Credential.attributes is iterable
-        # pylint: disable-next=not-an-iterable
-        for a in ExampleCredential.attributes():
-            if a.blind:
-                assert attributes[a.name] not in request.clear_attributes
-                assert attributes[a.name] in [
-                    user_key.decrypt(c) for c in request.blinded_attributes
-                ]
-            else:
-                assert attributes[a.name] in request.clear_attributes
-                assert attributes[a.name] not in [
-                    user_key.decrypt(c) for c in request.blinded_attributes
-                ]
+        for a in credential.clear_attribute_components():
+            assert a in request.clear_attributes
+            assert a not in [
+                credential.user_key.decrypt(c) for c in request.blinded_attributes
+            ]
+        for a in credential.blind_attribute_components():
+            assert a not in request.clear_attributes
+            assert a in [
+                credential.user_key.decrypt(c) for c in request.blinded_attributes
+            ]
 
     def test_valid(self, issuer_key, attributes):
-        request, user_key = ExampleCredential.request(
+        credential = ExampleCredential(
             issuer_key=issuer_key.public, **attributes
         )
+        request, _ = credential.request()
 
-        assert request.verify(issuer_key.public, user_key.public) is True
+        assert request.verify(issuer_key.public, credential.user_key.public) is True
 
     def test_invalid(self, issuer_key, attributes, sho):
-        request, user_key = ExampleCredential.request(
+        credential = ExampleCredential(
             issuer_key=issuer_key.public, **attributes
         )
+        request, _ = credential.request()
 
-        request.blinded_attributes[0] = user_key.encrypt(sho.get_point())
+        request.blinded_attributes[0] = credential.user_key.encrypt(sho.get_point())
 
-        assert request.verify(issuer_key.public, user_key.public) is False
+        assert request.verify(issuer_key.public, credential.user_key.public) is False
 
 
 class TestIssuanceResponse:
     """Tests for the issuance response."""
 
     def test_valid(self, issuer_key, attributes):
-        commitment = BlindAttributeCommitment.new(
-            issuer_key.public, [attributes['a3'], attributes['a4']]
-        )
-        request, _ = ExampleCredential.request(
+        credential = ExampleCredential(
             issuer_key=issuer_key.public, **attributes
         )
+        request, commitment = credential.request()
         response = ExampleCredential.issue(
             issuer_key=issuer_key,
             request=request,
@@ -80,12 +82,10 @@ class TestIssuanceResponse:
         assert response.verify(issuer_key.public, request) is True
 
     def test_invalid(self, issuer_key, attributes, sho):
-        commitment = BlindAttributeCommitment.new(
-            issuer_key.public, [attributes['a3'], attributes['a4']]
-        )
-        request, _ = ExampleCredential.request(
+        credential = ExampleCredential(
             issuer_key=issuer_key.public, **attributes
         )
+        request, commitment = credential.request()
         response = ExampleCredential.issue(
             issuer_key=issuer_key,
             request=request,
@@ -94,14 +94,13 @@ class TestIssuanceResponse:
         request.clear_attributes[0] = sho.get_point()
         assert response.verify(issuer_key.public, request) is False
 
-    @pytest.mark.parametrize('commitment_attributes', [['a1'], ['a1', 'a2'], ['a1', 'a2', 'a3']])
-    def test_commitment_missmatch(self, issuer_key, attributes, commitment_attributes):
-        commitment = BlindAttributeCommitment.new(
-            issuer_key.public, [attributes[a] for a in commitment_attributes]
-        )
-        request, _ = ExampleCredential.request(
+    def test_commitment_missmatch(self, issuer_key, attributes, sho):
+        credential = ExampleCredential(
             issuer_key=issuer_key.public, **attributes
         )
+        request, commitment = credential.request()
+
+        commitment.Js[0] = sho.get_point()
 
         with pytest.raises(Exception):
             ExampleCredential.issue(
@@ -111,10 +110,14 @@ class TestIssuanceResponse:
             )
 
     def test_tag_valid(self, issuer_key, attributes):
-        request, user_key = ExampleCredential.request(
+        credential = ExampleCredential(
             issuer_key=issuer_key.public, **attributes
         )
+        request, _ = credential.request()
         response = IssuanceResponse.new(issuer_key, request)
-        tag = response.tag.decrypt(user_key)
+        tag = response.tag.decrypt(credential.user_key)
         mac = MAC(issuer_key)
-        assert mac.verify(attributes.values(), tag) is True
+        assert mac.verify(
+            credential.clear_attribute_components() + credential.blind_attribute_components(),
+            tag
+        ) is True

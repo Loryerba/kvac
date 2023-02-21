@@ -12,10 +12,9 @@ from kvac.verifiable_encryption import AttributeRepresentationForEncryption as A
 
 
 class TestPresentation:
-    """Tests for the issuance request."""
-    def test_correct_arguments_blinded(self, valid_credential, issuer_key, attributes, hiding_keys):
+    """Tests for the issuance presentation."""
+    def test_correct_arguments_blinded(self, valid_credential, attributes, hiding_keys):
         presentation = valid_credential.present(
-            issuer_key=issuer_key.public,
             hiding_keys=hiding_keys
         )
 
@@ -34,15 +33,13 @@ class TestPresentation:
 
     def test_valid(self, valid_credential, issuer_key, hiding_keys):
         presentation = valid_credential.present(
-            issuer_key=issuer_key.public,
             hiding_keys=hiding_keys
         )
 
-        assert valid_credential.verify_present(presentation=presentation, issuer_key=issuer_key) is True
+        assert valid_credential.verify_presentation(presentation=presentation, issuer_key=issuer_key) is True
 
     def test_invalid(self, valid_credential, issuer_key, hiding_keys, sho):
         presentation = valid_credential.present(
-            issuer_key=issuer_key.public,
             hiding_keys=hiding_keys
         )
 
@@ -58,4 +55,4 @@ class TestPresentation:
             hiding_key_commitment=hidden_attribute.hiding_key_commitment
         )
 
-        assert valid_credential.verify_present(presentation=presentation, issuer_key=issuer_key) is False
+        assert valid_credential.verify_presentation(presentation=presentation, issuer_key=issuer_key) is False

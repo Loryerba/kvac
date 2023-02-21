@@ -5,6 +5,7 @@ from typing import List, Tuple, NamedTuple, Any, Optional
 
 from poksho.group.ristretto import RistrettoPoint
 
+from kvac import SystemParams
 from kvac.credential_presentation import CredentialPresentation
 from kvac.mac import MACTag
 from kvac.issuer_key import IssuerPublicKey, IssuerKeyPair
@@ -62,7 +63,7 @@ class Attribute:
         if self._hidden:
             if not isinstance(value, MessageToHide):
                 raise ValueError(f"attribute '{self.name}' is a hidden attribute, please specify a "
-                                 f"AttributeToHide object")
+                                 f"MessageToHide object")
             value = AttributeRepresentationForHiding.encode(value)
         else:
             value = (value,)
@@ -101,7 +102,8 @@ class KVAC:
 
     The lifecycle of a KVAC is as follows:
 
-    1. The user creates an issuance request
+    1. The user creates an *inactive* credential populated with values for all credential
+    attributes:
 
         kvac = Credential(
             issuer_public_key=...
@@ -109,6 +111,9 @@ class KVAC:
             another_normal_attribute=...,
             blind_attribute=...
         )
+
+    2. The user creates an issuance request using the inactive credential
+
         request, user_key = kvac.request()
 
     and sends the request to the issuer. The user_key is kept secret.
@@ -119,11 +124,11 @@ class KVAC:
 
     and sends the response to the user.
 
-    3. The user creates the KVAC from the response:
+    3. The user activates the KVAC using the response:
 
-        kvac.obtain_tag(response)
+        kvac.activate(response)
 
-    4. The user creates a presentation using his KVAC and a set of hiding keys for the
+    4. The user creates a presentation using his (now *active*) KVAC and a set of hiding keys for the
         hidden attributes:
 
         presentation = kvac.present(
@@ -143,9 +148,9 @@ class KVAC:
         This class indicates the stage we have currently reached in obtaining a credential.
         It is used to ensure we do the required steps (see above) in the correct order.
         """
-        INITIALIZED = 0
-        CREDENTIAL_REQUESTED = 1
-        CREDENTIAL_RECEIVED = 2
+        CREDENTIAL_INACTIVE = 0
+        ISSUANCE_REQUESTED = 1
+        CREDENTIAL_ACTIVE = 2
 
     issuer_public_key: IssuerPublicKey
     process_stage: KVAC.ProcessStage
@@ -167,7 +172,19 @@ class KVAC:
         for attribute in self.attributes():
             setattr(self, attribute.name, kwargs[attribute.name])
 
-        self.process_stage = self.ProcessStage.INITIALIZED
+        self.process_stage = self.ProcessStage.CREDENTIAL_INACTIVE
+
+    @classmethod
+    def generate_system(cls, label: str) -> SystemParams:
+        """
+        Generates system parameters with the correct number of attributes for this credential.
+        For details on the label, see the SystemParams#generate method.
+        """
+
+        return SystemParams.generate(
+            len(cls.revealed_attributes()) + 2 * len(cls.hidden_attributes()),
+            label
+        )
 
     @classmethod
     def attributes(cls) -> List[Attribute]:
@@ -231,7 +248,7 @@ class KVAC:
         )
         self.issuance_request = issuance_request
         self.user_key = user_key
-        self.process_stage = self.ProcessStage.CREDENTIAL_REQUESTED
+        self.process_stage = self.ProcessStage.ISSUANCE_REQUESTED
 
         return issuance_request, self.commit_blinded_attributes()
 
@@ -275,10 +292,10 @@ class KVAC:
 
         return IssuanceResponse.new(issuer_key, request)
 
-    def obtain_tag(self, *, response: IssuanceResponse):
-        if self.process_stage != self.ProcessStage.CREDENTIAL_REQUESTED:
+    def activate(self, response: IssuanceResponse):
+        if self.process_stage != self.ProcessStage.ISSUANCE_REQUESTED:
             raise CallNotAllowed(
-                "Cannot obtain a tag before having created a request."
+                "Cannot activate the credential before having created a issuance request."
             )
 
         if response.verify(self.issuer_public_key, self.issuance_request) is False:
@@ -287,7 +304,7 @@ class KVAC:
             )
 
         self.tag = response.tag.decrypt(self.user_key)
-        self.process_stage = self.ProcessStage.CREDENTIAL_RECEIVED
+        self.process_stage = self.ProcessStage.CREDENTIAL_ACTIVE
 
     @classmethod
     def revealed_attributes(cls) -> List[Attribute]:
@@ -303,12 +320,14 @@ class KVAC:
         # pylint: disable-next=not-an-iterable
         return [attribute for attribute in cls.attributes() if attribute.hidden is True]
 
-    def present(self, *, issuer_key: IssuerPublicKey, hiding_keys: List[HidingKeyPair]) -> CredentialPresentation:
+    def present(self, hiding_keys: Optional[List[HidingKeyPair]]) -> CredentialPresentation:
         """Creates a presentation for the credential.
+        :param hiding_keys  One hiding key for each attribute to hide.
+                            Can be omitted iff there are no hidden attributes whatsoever.
 
         Called by the user."""
 
-        if self.process_stage != self.ProcessStage.CREDENTIAL_RECEIVED:
+        if self.process_stage != self.ProcessStage.CREDENTIAL_ACTIVE:
             raise CallNotAllowed(
                 "Cannot present a credential without having received a tag."
             )
@@ -325,13 +344,14 @@ class KVAC:
                 hiding_pattern.append(False)
                 attributes.append(getattr(self, attribute.name))
 
-        if len(hiding_keys) != len(self.hidden_attributes()):
-            raise ValueError("There must be one blinding key given for each attribute to blind")
+        hiding_keys = hiding_keys or []
+        if 0 < len(self.hidden_attributes()) != len(hiding_keys):
+            raise ValueError("There must be one hiding key given for each attribute to hide")
 
-        return CredentialPresentation.new(self.tag, issuer_key, hiding_pattern, attributes, hiding_keys)
+        return CredentialPresentation.new(self.tag, self.issuer_public_key, hiding_pattern, attributes, hiding_keys)
 
     @classmethod
-    def verify_present(cls, *, issuer_key: IssuerKeyPair, presentation: CredentialPresentation) -> bool:
+    def verify_presentation(cls, *, issuer_key: IssuerKeyPair, presentation: CredentialPresentation) -> bool:
         """Verifies a credential presentation.
 
         Called by the issuer."""

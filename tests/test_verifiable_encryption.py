@@ -1,7 +1,9 @@
 import random
 
 import pytest
+from poksho.group.ristretto import RistrettoPoint
 
+from kvac import ZkGroupVerificationFailure
 from kvac.verifiable_encryption import EncryptionParams, KeyPair, AttributeRepresentationForEncryption, \
     DeserializationFailure, Ciphertext, MessageToEncrypt
 from kvac.ristretto_sho import RistrettoSho
@@ -137,6 +139,13 @@ def test_repeated_encryption(system, master_key, attribute_label):
             )),
             hash_supplement
         ).decode()
+
+
+def test_decryption_fails_with_invalid_ciphertext(system, master_key, attribute_label):
+    key_pair = KeyPair.derive_from(system, master_key, attribute_label)
+    sho = RistrettoSho(b'Test_E_1_May_Not_Be_Identity', b'seed')
+    with pytest.raises(ZkGroupVerificationFailure):
+        key_pair.decrypt(Ciphertext(E_1=RistrettoPoint.identity(), E_2=sho.get_point()), b'')
 
 
 def test_message_sizes(system, master_key, attribute_label):

@@ -23,16 +23,15 @@ def test_kvac_complete_example(issuer_key, attributes, hiding_keys):
     )
 
     # user
-    credential.obtain_tag(response=response)
+    credential.activate(response=response)
 
     # user
     presentation = credential.present(
-        issuer_key=issuer_key.public,
         hiding_keys=hiding_keys,
     )
 
     # issuer
-    assert ExampleCredential.verify_present(
+    assert ExampleCredential.verify_presentation(
         issuer_key=issuer_key,
         presentation=presentation
     ) is True
@@ -43,7 +42,7 @@ def test_cannot_obtain_tag_before_requesting_credential(issuer_key, attributes):
         issuer_key=issuer_key.public, **attributes
     )
     with pytest.raises(CallNotAllowed):
-        credential.obtain_tag(response=None)  # type: ignore
+        credential.activate(response=None)  # type: ignore
 
 
 def test_cannot_present_kvac_before_having_obtained_tag(issuer_key, attributes):
@@ -52,7 +51,7 @@ def test_cannot_present_kvac_before_having_obtained_tag(issuer_key, attributes):
     )
     credential.request()
     with pytest.raises(CallNotAllowed):
-        credential.present(issuer_key=issuer_key, hiding_keys=[])
+        credential.present(hiding_keys=[])
 
 
 def test_kvac_attributes(issuer_key, attributes):
@@ -63,7 +62,7 @@ def test_kvac_attributes(issuer_key, attributes):
     response = ExampleCredential.issue(
         issuer_key=issuer_key, request=request, commitment=commitment
     )
-    credential.obtain_tag(response=response)
+    credential.activate(response=response)
 
     assert credential.a1 == attributes["a1"]
     assert credential.a2 == attributes["a2"].message

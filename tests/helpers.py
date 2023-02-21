@@ -4,7 +4,6 @@ import pytest
 from kvac.kvac import KVAC, Attribute
 
 from kvac.ristretto_sho import RistrettoSho
-from kvac.system_params import SystemParams
 from kvac.issuer_key import IssuerKeyPair
 from kvac.verifiable_encryption import KeyPair as HidingKeyPair, \
     MessageToEncrypt as MessageToHide
@@ -27,16 +26,6 @@ def attributes(sho):
         "a3": MessageToHide(sho.squeeze(16), sho.squeeze(13)),
         "a4": sho.get_point(),
     }
-
-
-@pytest.fixture
-def issuer_key():
-    system = SystemParams.generate(
-        6,  # We need 2 components for our two hidden attributes and one for the two revealed ones
-        "test"
-    )
-    issuer_key = IssuerKeyPair.generate(system)
-    return issuer_key
 
 
 @pytest.fixture
@@ -63,11 +52,18 @@ class ExampleCredential(KVAC):
 
 
 @pytest.fixture
+def issuer_key():
+    system = ExampleCredential.generate_system("test")
+    issuer_key = IssuerKeyPair.generate(system)
+    return issuer_key
+
+
+@pytest.fixture
 def valid_credential(issuer_key, attributes):
     credential = ExampleCredential(issuer_key=issuer_key.public, **attributes)
     request, commitment = credential.request()
     response = ExampleCredential.issue(
         issuer_key=issuer_key, request=request, commitment=commitment
     )
-    credential.obtain_tag(response=response)
+    credential.activate(response=response)
     return credential

@@ -97,6 +97,9 @@ class SecretKey(NamedTuple):
         Requires the hash_supplement used for obtaining the attribute representation as an extra argument
         as we cannot include it in the ciphertext without potentially leaking unwanted information.
         """
+        if ciphertext.E_1 == RistrettoPoint.identity():
+            raise ZkGroupVerificationFailure()
+
         decrypted_M2 = ciphertext.E_2 / (ciphertext.E_1 ** self.a_2)
 
         representation = AttributeRepresentationForEncryption.encode(

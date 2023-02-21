@@ -1,12 +1,15 @@
 import secrets
+from typing import Type, Dict, List
 import pytest
 
 from kvac.kvac import KVAC, Attribute
 
 from kvac.ristretto_sho import RistrettoSho
 from kvac.issuer_key import IssuerKeyPair
-from kvac.verifiable_encryption import KeyPair as HidingKeyPair, \
-    MessageToEncrypt as MessageToHide
+from kvac.verifiable_encryption import (
+    KeyPair as HidingKeyPair,
+    MessageToEncrypt as MessageToHide,
+)
 
 
 # pytest fixtures constantly redefine outer names, so ignore the warning.
@@ -38,7 +41,7 @@ def hiding_keys(issuer_key, master_key):
     encryption_params = issuer_key.public.system.G_es
     return [
         HidingKeyPair.derive_from(encryption_params[0], master_key, b"attribute_1"),
-        HidingKeyPair.derive_from(encryption_params[1], master_key, b"attribute_2")
+        HidingKeyPair.derive_from(encryption_params[1], master_key, b"attribute_2"),
     ]
 
 
@@ -66,4 +69,31 @@ def valid_credential(issuer_key, attributes):
         issuer_key=issuer_key, request=request, commitment=commitment
     )
     credential.activate(response=response)
+    return credential
+
+
+def credential_full_example(
+    credential_class: Type[KVAC],
+    issuer_key: IssuerKeyPair,
+    attributes: Dict,
+    hiding_keys: List[HidingKeyPair],
+):
+    """Performs all steps in the lifecycle of a credential and returns the credential."""
+
+    # user
+    credential = credential_class(issuer_key=issuer_key.public, **attributes)
+    request, commitment = credential.request()
+
+    # issuer
+    response = credential_class.issue(
+        issuer_key=issuer_key, request=request, commitment=commitment
+    )
+
+    # user
+    credential.activate(response)
+    presentation = credential.present(hiding_keys=hiding_keys)
+
+    # issuer
+    assert credential_class.verify_presentation(issuer_key=issuer_key, presentation=presentation) is True
+
     return credential

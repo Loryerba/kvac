@@ -1,4 +1,4 @@
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 from .issuer_key import IssuerPublicKey, IssuerKeyPair
 from .mac import MACTag, MAC

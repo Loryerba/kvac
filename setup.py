@@ -23,6 +23,7 @@ setup(
     name='kvac',
     version=get_version("kvac/__init__.py"),
     packages=find_packages(exclude=['tests']),
+    package_data={'kvac': ['py.typed']},
     install_requires=['poksho @ git+https://github.com/hpicrypto/poksho.git@0.0.1#egg=poksho'],
     tests_require=['pytest'],
     license='GNU Affero General Public License v3.0',

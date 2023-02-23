@@ -128,13 +128,17 @@ class IssuanceResponseStatement(NamedTuple):
             term_G_V_div_I *= G_y**y
 
         term_s1 = G**rprime
-        for C1, y in zip(C1s, ys[-number_of_blinded_attributes:]):
+        for C1, y in zip(
+                C1s,
+                # The hidden attributes start directly after the clear attributes
+                ys[number_of_clear_attributes:]
+        ):
             term_s1 *= C1**y
 
         term_s2 = Y**rprime * G_w**w * U**x0 * U_raised_to_t**x1
         for M, y in zip(Ms, ys):
             term_s2 *= M**y
-        for C2, y in zip(C2s, ys[-number_of_blinded_attributes:]):
+        for C2, y in zip(C2s, ys[number_of_clear_attributes:]):
             term_s2 *= C2**y
 
         statement = Statement(

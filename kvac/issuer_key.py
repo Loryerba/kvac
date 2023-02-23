@@ -39,8 +39,12 @@ class IssuerKeyPair(NamedTuple):
     def generate(
             cls,
             system: SystemParams,
+            num_attributes: int,
     ) -> IssuerKeyPair:
         """Generates a new issuer key pair."""
+        if num_attributes > system.max_attributes:
+            raise ValueError(f'This system only supports credentials with up to {system.max_attributes} attributes')
+
         sho = RistrettoSho(
             b'kvac.issuer_key.IssuerKeyPair.generate',
             secrets.token_bytes(256)
@@ -51,7 +55,7 @@ class IssuerKeyPair(NamedTuple):
         wprime = sho.get_scalar()
         x0 = sho.get_scalar()
         x1 = sho.get_scalar()
-        ys = [sho.get_scalar() for _ in range(system.max_attributes)]
+        ys = [sho.get_scalar() for _ in range(num_attributes)]
 
         C_W = (system.G_w ** w) * (system.G_wprime ** wprime)
         I = system.G_V / ((system.G_x0 ** x0) * (system.G_x1 ** x1))

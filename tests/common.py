@@ -2,6 +2,7 @@ import secrets
 from typing import Type, Dict, List
 import pytest
 
+from kvac import SystemParams
 from kvac.kvac import KVAC, Attribute
 
 from kvac.ristretto_sho import RistrettoSho
@@ -32,6 +33,11 @@ def attributes(sho):
 
 
 @pytest.fixture
+def system_params():
+    return SystemParams.generate(10, "test")
+
+
+@pytest.fixture
 def master_key():
     return b"hiding_master_key"
 
@@ -55,9 +61,11 @@ class ExampleCredential(KVAC):
 
 
 @pytest.fixture
-def issuer_key():
-    system = ExampleCredential.generate_system("test")
-    issuer_key = IssuerKeyPair.generate(system)
+def issuer_key(system_params):
+    issuer_key = IssuerKeyPair.generate(
+        system_params,
+        ExampleCredential.number_of_attribute_components()
+    )
     return issuer_key
 
 

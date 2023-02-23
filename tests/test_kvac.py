@@ -2,7 +2,9 @@ import pytest
 
 # pylint doesn't recognize the necessary pytest fixtures.
 # pylint: disable-next=unused-import
-from common import ExampleCredential, issuer_key, attributes, sho, hiding_keys, master_key, credential_full_example
+from common import (
+    ExampleCredential, issuer_key, system_params, attributes, sho, hiding_keys, master_key, credential_full_example
+)
 from kvac.exceptions import CallNotAllowed
 from kvac.kvac import KVAC, Attribute
 
@@ -45,16 +47,17 @@ class TestAttributes:
         assert credential.a3 == attributes["a3"].message
         assert credential.a4 == attributes["a4"]
 
-
-    def test_scalar_attributes(self, sho):
+    def test_scalar_attributes(self, system_params, sho):
         class Credential(KVAC):
             """A test credential with scalar attributes."""
             a1 = Attribute()
             a2 = Attribute(scalar=True)
             a3 = Attribute(scalar=True, blind=True)
 
-        system = Credential.generate_system("test_kvac.TestAttributes.test_scalar_attributes")
-        issuer_key = IssuerKeyPair.generate(system)
+        issuer_key = IssuerKeyPair.generate(
+            system_params,
+            Credential.number_of_attribute_components()
+        )
 
         attributes = {
             "a1": sho.get_point(),

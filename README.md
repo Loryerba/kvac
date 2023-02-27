@@ -21,11 +21,11 @@ DO NOT USE THIS PROJECT IN A PRODUCTION ENVIRONMENT.**
 
 This project can be installed in multiple ways:
 
-`requirements.txt`: Add `git+https://github.com/hpicrypto/kvac.git@0.0.6#egg=kvac`.
+`requirements.txt`: Add `git+https://github.com/hpicrypto/kvac.git@0.1.0#egg=kvac`.
 
-`pip(env)`: Run `pip(env) install git+https://github.com/hpicrypto/kvac.git@0.0.6#egg=kvac`.
+`pip(env)`: Run `pip(env) install git+https://github.com/hpicrypto/kvac.git@0.1.0#egg=kvac`.
 
-`poetry`: Run `poetry add git+https://github.com/hpicrypto/kvac.git@0.0.6`.
+`poetry`: Run `poetry add git+https://github.com/hpicrypto/kvac.git@0.1.0`.
 
 ## Usage
 

@@ -14,6 +14,8 @@ venv
 .vscode
 Pipfile
 Pipfile.lock
+pyproject.toml
+poetry.lock
 
 ### Linux ###
 *~

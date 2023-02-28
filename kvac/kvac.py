@@ -136,58 +136,7 @@ class Attribute:
 class KVAC:
     """Represents a Keyed-Verification Anonymous Credential (KVAC).
 
-    To implement a credential with specific attributes, inherit from this class
-    and mark class variables as attributes:
-
-        class Credential(KVAC):
-            normal_attribute = Attribute()
-            another_normal_attribute = Attribute()
-            blind_attribute = Attribute(blind=True)
-
-    On instances of the Credential class, the values of the attribute class variables
-    are available as instance variable.
-
-    The lifecycle of a KVAC is as follows:
-
-    1. The user creates an *inactive* credential populated with values for all credential
-    attributes:
-
-        kvac = Credential(
-            issuer_public_key=...
-            normal_attribute=...,
-            another_normal_attribute=...,
-            blind_attribute=...
-        )
-
-    2. The user creates an issuance request using the inactive credential
-
-        request, user_key = kvac.request()
-
-    and sends the request to the issuer. The user_key is kept secret.
-
-    2. The issuer creates an issuance response
-
-        response = Credential.issue(issuer_secret_key, request)
-
-    and sends the response to the user.
-
-    3. The user activates the KVAC using the response:
-
-        kvac.activate(response)
-
-    4. The user creates a presentation using his (now *active*) KVAC and a set of hiding keys for the
-        hidden attributes:
-
-        presentation = kvac.present(
-            hiding_keys
-        )
-
-    5. Finally, the issuer can verify the presentation using his secret key:
-
-        Credential.verify_present(
-            issuer_secret_key,
-            presentation
-        )
+    Refer to the README on how to use this class for implementing credentials with specific attributes..
     """
 
     class ProcessStage(Enum):
